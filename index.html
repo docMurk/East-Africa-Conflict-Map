@@ -2901,8 +2901,10 @@ function renderArrows() {
       // Double line effect: thick color + white inner
       layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w + 2.2).attr('data-base-w', w + 2.2).attr('fill','none').attr('opacity', 0.9).attr('class','arrow').style('pointer-events','stroke').style('cursor','pointer').on('click', () => selectArrow(a.id));
       layer.append('path').attr('d', d).attr('stroke', '#FAF8F3').attr('stroke-width', Math.max(0.8, w - 0.8)).attr('data-base-w', Math.max(0.8, w - 0.8)).attr('fill','none').attr('class','arrow').style('pointer-events','none');
-      // head
-      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w).attr('fill','none').attr('class','arrow').attr('marker-end', headMarker).attr('opacity', 0).style('pointer-events','none');
+      // head — invisible stroke carrying the marker-end. Use stroke-opacity
+      // (not opacity) so the arrowhead marker still renders; element-level
+      // opacity:0 would hide markers too.
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w).attr('fill','none').attr('class','arrow').attr('marker-end', headMarker).attr('stroke-opacity', 0).style('pointer-events','none');
     } else {
       const p = layer.append('path')
         .attr('d', d)

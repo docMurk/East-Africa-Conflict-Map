@@ -2,6 +2,15 @@
 
 Project-specific gotchas to check before editing `index.html`.
 
+## Git workflow: push directly to `main`
+
+Solo project, no review gate. When a change is complete and the verification
+script in the section below passes, commit and push straight to `main` — do
+**not** open a pull request or stage work on a feature branch for review.
+If the session is scoped to a pre-created feature branch, fast-forward merge
+it into `main` and push `main`; don't leave work stranded on a branch waiting
+for a PR.
+
 ## Adding a new country (on-map actor)
 
 A country shows up on the map only if **every** step below is done. Skipping any one of them produces a silent failure — no label, no tint, no click target, no arrow endpoint — with no console error.

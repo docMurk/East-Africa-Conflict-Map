@@ -1,0 +1,102 @@
+# Preferred outlet domains for /refresh-sources.
+# One domain per line. Lines starting with # are ignored.
+# Curated for East Africa conflict reporting (Sudan, Ethiopia, Somalia).
+# Edit freely — this is read verbatim by the /refresh-sources command.
+
+# --- Primary / official ---
+undocs.org
+un.org
+icc-cpi.int
+icj-cij.org
+treasury.gov
+ofac.treasury.gov
+state.gov
+africom.mil
+europarl.europa.eu
+consilium.europa.eu
+gov.uk
+
+# --- Think tanks & research ---
+crisisgroup.org
+chathamhouse.org
+cfr.org
+brookings.edu
+usip.org
+rusi.org
+sipri.org
+iiss.org
+csis.org
+atlanticcouncil.org
+ecfr.eu
+ispionline.it
+institutmontaigne.org
+odi.org
+ebert-stiftung.de
+carnegieendowment.org
+wilsoncenter.org
+hoover.org
+rand.org
+iss.europa.eu
+issafrica.org
+africacenter.org
+sahanjournal.org
+riftvalley.net
+clingendael.org
+gga.org
+
+# --- Investigative / advocacy ---
+thesentry.org
+globalwitness.org
+amnesty.org
+hrw.org
+icij.org
+bellingcat.com
+occrp.org
+airwars.org
+genocidewatch.com
+swissaid.ch
+
+# --- Conflict data ---
+acleddata.com
+uppsalaconflictdataprogram.org
+ucdp.uu.se
+
+# --- Wires & long-form reporting ---
+reuters.com
+apnews.com
+afp.com
+bloomberg.com
+ft.com
+wsj.com
+nytimes.com
+washingtonpost.com
+theguardian.com
+bbc.com
+bbc.co.uk
+aljazeera.com
+economist.com
+foreignpolicy.com
+france24.com
+dw.com
+rfi.fr
+
+# --- Regional & specialist ---
+middleeasteye.net
+madamasr.com
+sudantribune.com
+dabangasudan.org
+addisstandard.com
+ethiopiainsider.com
+hiiraan.com
+somaliguardian.com
+garoweonline.com
+theafricareport.com
+africaconfidential.com
+africanarguments.org
+africa-confidential.com
+nation.africa
+monitor.co.ug
+theeastafrican.co.ke
+standardmedia.co.ke
+mg.co.za
+enoughproject.org

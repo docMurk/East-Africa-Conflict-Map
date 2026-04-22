@@ -26,6 +26,11 @@
   --fgs: #2A7373;
   --sml: #6B4A8E;
   --ash: #7A2A2A;
+  --shabaab: #7A2A2A;
+  --unrest: #9A3B2E;
+  --eritrean: #6B2E5E;
+  --puntland: #4E6B8C;
+  --khatumo: #D17A3D;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -350,17 +355,16 @@ window.CONFLICT_DATA = {
   modes: {
     sudan: {
       title: "Sudan Civil War",
-      subtitle: "SAF vs. RSF, April 2023–present",
+      subtitle: "SAF vs. RSF · April 2023–present · admin-1 control as of Apr 2026",
       sides: [
         { id: "saf", label: "SAF / Sudanese federal govt", color: "#1F3A5F" },
         { id: "rsf", label: "Rapid Support Forces (RSF)", color: "#B8413A" },
+        { id: "contested", label: "Contested / active frontline", color: "#8A857A" },
         { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
       ],
-      // alignment by country/region
+      // Country-level alignment for peripheral actors. Sudan itself and Libya
+      // are NOT tagged here — they come from admin-1 CONTROL below.
       alignments: {
-        SDN_SAF: "saf", // SAF-held Sudan
-        SDN_RSF: "rsf", // RSF-held Darfur
-        SDN_CONTESTED: "contested",
         EGY: "saf",
         ERI: "saf",
         TUR: "saf",
@@ -375,24 +379,25 @@ window.CONFLICT_DATA = {
         DJI: "neutral",
         SOM: "neutral",
         YEM: "neutral",
-        OMN: "neutral",
-        LBY_LNA: "rsf" // Haftar/LNA east
+        OMN: "neutral"
       }
     },
     ethiopia: {
       title: "Ethiopian Internal Conflicts",
-      subtitle: "Federal government vs. TPLF and allied fronts",
+      subtitle: "TPLF aftermath, Fano/OLA insurgencies · admin-1 status as of Apr 2026",
       sides: [
         { id: "fed", label: "Federal government (Addis)", color: "#2F5233" },
         { id: "tplf", label: "TPLF / Tigray & aligned fronts", color: "#C08A3E" },
+        { id: "unrest", label: "Active insurgency (Fano, OLA)", color: "#9A3B2E" },
+        { id: "eritrean", label: "Reported Eritrean presence", color: "#6B2E5E" },
+        { id: "contested", label: "Contested / mixed", color: "#8A857A" },
         { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
       ],
+      // Sides mapping: 'fed' (federal-controlled), 'tplf' (Tigray held by TPLF),
+      // 'unrest' (active insurgency), 'eritrean' (reported Eritrean presence),
+      // 'contested' (mixed/overlap). External actors stay country-level.
       alignments: {
-        ETH_FED: "fed",
-        ETH_TIGRAY: "tplf",
-        ETH_AMHARA: "contested", // Fano insurgency
-        ETH_OROMIA: "contested", // OLA
-        ERI: "fed", // during war, against TPLF
+        ERI: "fed", // historically against TPLF; note: reported recent rapprochement w/ Debretsion faction
         EGY: "tplf", // political support vs Addis (GERD)
         SDN: "tplf", // complicated; al-Fashaga + historical
         SOM: "fed",
@@ -409,31 +414,156 @@ window.CONFLICT_DATA = {
     },
     somalia: {
       title: "Somalia – Somaliland & Al-Shabaab Insurgency",
-      subtitle: "Federal Government of Somalia, Somaliland, and Al-Shabaab",
+      subtitle: "FGS, Somaliland, Puntland, Khatumo, Al-Shabaab · admin-1 as of Apr 2026",
       sides: [
         { id: "fgs", label: "Federal Government of Somalia", color: "#2A7373" },
         { id: "sml", label: "Somaliland", color: "#6B4A8E" },
-        { id: "ash", label: "Al-Shabaab influence zones", color: "#7A2A2A" },
+        { id: "puntland", label: "Puntland", color: "#4E6B8C" },
+        { id: "khatumo", label: "SSC-Khatumo", color: "#D17A3D" },
+        { id: "shabaab", label: "Al-Shabaab control", color: "#7A2A2A" },
+        { id: "contested", label: "Contested / mixed", color: "#8A857A" },
         { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
       ],
+      // External actors at country level. Somalia's admin-1 regions come from CONTROL below.
       alignments: {
-        SOM_FGS: "fgs",
-        SOM_SML: "sml",
-        SOM_ASH: "ash",
         TUR: "fgs",
         EGY: "fgs",
         ERI: "fgs",
         QAT: "fgs",
-        UAE: "sml", // Berbera, DP World
+        UAE: "sml", // Berbera, DP World, Puntland ties
         ETH: "sml", // MoU Jan 2024
         KEN: "fgs",
         DJI: "fgs",
         SAU: "fgs",
         IRN: "neutral",
-        YEM: "neutral", // Houthis separate issue
+        YEM: "neutral",
         SDN: "neutral",
         SSD: "neutral",
         OMN: "neutral"
+      }
+    }
+  },
+
+  // ----------------------------------------------------------------------
+  // Admin-1 control (wilayat / regions / shabiyat)
+  // ----------------------------------------------------------------------
+  // Keyed by mode then by parent country ISO-3 then by admin-1 name as it
+  // appears in Natural Earth 10m admin-1 (see admin1.json "name" field).
+  // To update the map, edit the tag strings below — 5-minute read-and-tweak.
+  //
+  // SUDAN (Sudan mode) — snapshot date: 22 April 2026
+  //   Primary sources:
+  //     - Sudan Conflict Observatory (Yale HRL): https://hub.conflictobservatory.org/portal/apps/sites/#/sudan
+  //     - ACLED Sudan dashboard + Kordofan report (early 2026)
+  //     - Sudans Post control map (March 2026): https://www.sudanspost.com/territorial-control-in-sudans-conflict-march-2026/
+  //     - Al Jazeera (16 Apr 2026): east/west partition framing
+  //     - UN OHCHR El Fasher fall report (Feb 2026)
+  //   Key events since late 2025: Babanusa fell to RSF (Dec 2025); SAF broke Dilling siege
+  //   (Jan 2026); Bara changed hands twice (Mar 2026); El Fasher fell to RSF (Oct 2025);
+  //   RSF+SPLM-N seized Kurmuk in Blue Nile (Mar 2026).
+  //   Note: Natural Earth merges West Kordofan into "South Kordufan" (no separate feature).
+  //   Tagged contested as a compromise — West Kordofan is RSF-held, Nuba Mountains of old
+  //   S. Kordofan have SPLM-N (neutral third party), Kadugli is SAF-held.
+  //
+  // LIBYA (Sudan mode) — only the four shabiyat operationally linked to UAE→RSF
+  // resupply are tagged. Per UN Panel of Experts (Feb 2025 final; leaked draft Apr 2026),
+  // Reuters, Middle East Eye, New Arab: Kufra (primary transit hub), Jufra (secondary),
+  // Marj (al-Khadim UAE airbase), Benghazi (command/logistics node).
+  //
+  // ETHIOPIA (Ethiopia mode) — snapshot date: 22 April 2026
+  //   Primary sources:
+  //     - Crisis Group Ethiopia briefings (2024–2026)
+  //     - ACLED Ethiopia dashboard
+  //     - Addis Standard reporting on TPLF split / TIRA leadership change (Mar 2025)
+  //   Key notes:
+  //     - Tigray tagged "contested": Pretoria implementation partial; TPLF split between
+  //       Getachew Reda faction and Debretsion faction; TIRA weak; risk of renewed war flagged.
+  //     - Amhara "unrest": Fano insurgency active since April 2023; rural zones contested in
+  //       N. Gondar, S. Gondar, Gojjam, N. Shewa.
+  //     - Oromiya "unrest": OLA/OLF-Shene active in Wollega zones; peace talks collapsed.
+  //     - Natural Earth still uses old SNNPR (pre-2023 split into Sidama / South Ethiopia /
+  //       Central Ethiopia / South West Ethiopia); tagged "fed" — no active insurgency.
+  //     - Western Tigray (Welkait/Tsegede) administered by Amhara forces since 2020; not
+  //       a separate NE feature, so folded into Tigray at this resolution.
+  //     - Eritrean presence reported in Irob/Gulomakeda (E. Tigray) and N. Afar border —
+  //       not full-region control, noted in prose rather than region tags.
+  //
+  // SOMALIA (Somalia mode) — snapshot date: 22 April 2026
+  //   Primary sources:
+  //     - Hiraal Institute (https://hiraalinstitute.org/), ACLED Somalia, Long War Journal
+  //     - Crisis Group "Somalia's Crumbling Political Consensus" (Oct 2025)
+  //     - Reuters Apr 2024 (Puntland-FGS rupture); Long War Journal Apr 2025 (AS retakes Adan Yabaal)
+  //   Key notes:
+  //     - Puntland (Bari/Nugaal) tagged separately from FGS: suspended federal cooperation Apr 2024.
+  //     - Somaliland is a single NE feature (no admin-1 subdivisions). Tagged "sml" as a whole.
+  //       Sool and parts of Sanaag are de facto SSC-Khatumo post-Aug 2023 (Las Anod), but this
+  //       resolution can't render it — noted in docstring; add hand-traced polygon if needed.
+  //     - Shabaab strongholds: Lower Shabelle, Bay, Bakool, Middle Juba unchallenged.
+  //     - Contested rural belt: Galguduud, Hiiraan, Middle Shabelle (2022–23 Macawisley gains
+  //       partially reversed by AS in 2024–25 under AUSSOM transition).
+  //     - Gedo: tagged "contested" due to FGS–Jubaland rupture (late 2024) plus AS footprint.
+  // ----------------------------------------------------------------------
+  control: {
+    sudan: {
+      SDN: {
+        "Khartoum": "saf",
+        "Gezira": "saf",
+        "Sennar": "saf",
+        "Blue Nile": "contested",
+        "White Nile": "saf",
+        "North Kordufan": "contested",
+        "South Kordufan": "contested",
+        "North Darfur": "rsf",
+        "Southern Darfur": "rsf",
+        "Eastern Darfur": "rsf",
+        "Western Darfur": "rsf",
+        "Central Darfur": "rsf",
+        "Northern": "saf",
+        "River Nile": "saf",
+        "Red Sea": "saf",
+        "Kassala": "saf",
+        "Gedarif": "saf"
+      },
+      LBY: {
+        "Al Kufrah": "rsf",
+        "Al Jufrah": "rsf",
+        "Al Marj": "rsf",
+        "Benghazi": "rsf"
+      }
+    },
+    ethiopia: {
+      ETH: {
+        "Tigray": "contested",
+        "Amhara": "unrest",
+        "Afar": "fed",
+        "Oromiya": "unrest",
+        "Somali": "fed",
+        "Benshangul-Gumaz": "fed",
+        "Gambela Peoples": "fed",
+        "Southern Nations, Nationalities and Peoples": "fed",
+        "Harari People": "fed",
+        "Addis Ababa": "fed",
+        "Dire Dawa": "fed"
+      }
+    },
+    somalia: {
+      SOM: {
+        "Bari": "puntland",
+        "Nugaal": "puntland",
+        "Mudug": "contested",
+        "Galguduud": "contested",
+        "Hiiraan": "contested",
+        "Shabeellaha Dhexe": "contested",
+        "Banaadir": "fgs",
+        "Shabeellaha Hoose": "shabaab",
+        "Bay": "shabaab",
+        "Bakool": "shabaab",
+        "Gedo": "contested",
+        "Jubbada Dhexe": "shabaab",
+        "Jubbada Hoose": "contested"
+      },
+      SOL: {
+        "Somaliland": "sml"
       }
     }
   },
@@ -1036,7 +1166,7 @@ window.CONFLICT_DATA = {
 const DATA = window.CONFLICT_DATA;
 
 const state = {
-  mode: localStorage.getItem('conflict_mode') || 'sudan',
+  mode: (new URLSearchParams(location.search).get('mode')) || localStorage.getItem('conflict_mode') || 'sudan',
   selected: null,
   world: null,
   countriesById: {},   // ISO-N3 -> feature
@@ -1296,8 +1426,18 @@ let projection, pathGen, svg, width = 1000, height = 700;
 
 async function loadMap() {
   try {
-    const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+    const [world, admin1] = await Promise.all([
+      d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json'),
+      d3.json('admin1.json')
+    ]);
     state.world = world;
+    state.admin1 = admin1;
+    // Index admin-1 features by (country ISO, region name) for O(1) lookup in renderTints.
+    state.admin1ByCountry = {};
+    for (const f of admin1.features) {
+      const iso = f.properties.adm0_a3;
+      (state.admin1ByCountry[iso] = state.admin1ByCountry[iso] || {})[f.properties.name] = f;
+    }
     const countries = topojson.feature(world, world.objects.countries).features;
     countries.forEach(f => {
       const code = NAME_TO_OUR[f.properties.name];
@@ -1361,7 +1501,7 @@ function initSvg() {
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 Z').attr('fill', c);
   });
 
-  ['saf','rsf','fed','tplf','fgs','sml','ash','neutral'].forEach(id => {
+  ['saf','rsf','fed','tplf','fgs','sml','ash','shabaab','neutral','unrest','eritrean','puntland','khatumo'].forEach(id => {
     const color = getComputedStyle(document.documentElement).getPropertyValue('--' + id).trim();
     // Solid wash
     defs.append('pattern')
@@ -1942,65 +2082,68 @@ function render() {
   localStorage.setItem('conflict_mode', state.mode);
 }
 
-// Rough sub-region polygons (lon/lat) — used when we need to tint a sub-area (Darfur, Tigray, Somaliland, etc.)
-// These are approximate, hand-coded for illustrative shading.
-const SUB_REGIONS = {
-  SDN_RSF: [[22.0,22.0],[27.5,22.0],[28.5,17.0],[28.0,11.0],[23.0,10.0],[22.0,12.5]], // Darfur + W. Kordofan-ish
-  SDN_SAF: [[28.5,22.0],[37.5,22.5],[38.2,18.5],[35.5,14.0],[34.0,10.5],[28.5,11.5],[28.5,17.0]], // N, E, central incl. Port Sudan
-  SDN_CONTESTED: [[30.0,15.5],[33.5,15.5],[33.8,13.0],[30.0,13.0]], // Khartoum/Gezira strip
-  ETH_TIGRAY: [[36.5,13.2],[39.8,14.5],[40.5,13.0],[38.5,12.4]],
-  ETH_AMHARA: [[36.2,12.8],[39.2,12.8],[39.2,10.5],[36.5,10.5]],
-  ETH_OROMIA: [[34.5,9.5],[42.0,9.5],[42.0,5.5],[36.0,5.0]],
-  ETH_FED: null, // falls back to whole Ethiopia minus the above
-  SOM_SML: [[43.0,11.5],[49.0,11.5],[49.0,9.2],[43.0,9.2]], // Somaliland
-  SOM_FGS: [[41.5,10.5],[46.0,5.0],[42.0,-1.5],[41.0,2.0]], // south + central (approx)
-  SOM_ASH: [[42.5,4.0],[45.0,4.0],[45.5,1.5],[42.5,1.5]],
-  LBY_LNA: [[20.0,32.5],[25.5,32.5],[25.5,20.5],[20.0,20.5]],
-};
+// Sides rendered with a hatch pattern rather than solid fill: these signal
+// contested territory, non-state influence, or reported-but-not-controlled
+// presence — not clean control by one faction.
+const HATCHED_SIDES = new Set(['contested', 'unrest', 'eritrean', 'shabaab', 'ash']);
 
-function subRegionPath(id) {
-  const coords = SUB_REGIONS[id];
-  if (!coords) return null;
-  // close polygon
-  const ring = coords.concat([coords[0]]);
-  const feat = { type: 'Polygon', coordinates: [ring] };
-  return pathGen(feat);
+function tintFillForSide(side) {
+  if (side === 'contested') return 'url(#contested-hatch)';
+  if (side === 'neutral') {
+    return getComputedStyle(document.documentElement).getPropertyValue('--neutral').trim();
+  }
+  if (HATCHED_SIDES.has(side)) return `url(#hatch-${side})`;
+  return `url(#solid-${side})`;
 }
 
 function renderTints() {
   const layer = svg.select('#tintLayer');
   layer.selectAll('*').remove();
   const mode = DATA.modes[state.mode];
+  const control = (DATA.control && DATA.control[state.mode]) || {};
 
-  Object.entries(mode.alignments).forEach(([regionId, side]) => {
-    let pathD = null, country = null;
-
-    if (SUB_REGIONS[regionId] !== undefined) {
-      pathD = subRegionPath(regionId);
-      country = regionId.split('_')[0];
-    } else if (state.countriesByIso[regionId]) {
-      pathD = pathGen(state.countriesByIso[regionId]);
-      country = regionId;
-    }
+  // 1) Country-level alignments: tint the whole country, but skip any country
+  //    that has admin-1 CONTROL entries in this mode (those get rendered below,
+  //    and a blanket country tint underneath would muddy the palette).
+  Object.entries(mode.alignments).forEach(([iso, side]) => {
+    if (control[iso]) return;
+    const feat = state.countriesByIso[iso];
+    if (!feat) return;
+    const pathD = pathGen(feat);
     if (!pathD) return;
-
-    let fill;
-    if (side === 'contested') fill = 'url(#contested-hatch)';
-    else if (side === 'neutral') {
-      fill = getComputedStyle(document.documentElement).getPropertyValue('--neutral').trim();
-    } else if (side === 'ash') {
-      fill = 'url(#hatch-ash)';
-    } else {
-      fill = `url(#solid-${side})`;
-    }
-
     layer.append('path')
       .attr('d', pathD)
       .attr('class', 'tint')
-      .attr('fill', fill)
+      .attr('fill', tintFillForSide(side))
       .attr('opacity', side === 'neutral' ? 0.35 : 1)
       .style('cursor', 'pointer')
-      .on('click', () => selectCountry(country));
+      .on('click', () => selectCountry(iso));
+  });
+
+  // 2) Admin-1 tints. For Sudan-mode Libya we may only tag a subset of shabiyat;
+  //    untagged admin-1 features stay uncolored (falling through to the base
+  //    land layer), so we never accidentally paint the whole country.
+  Object.entries(control).forEach(([iso, regionMap]) => {
+    const bank = state.admin1ByCountry[iso === 'SOL' ? 'SOL' : iso] || {};
+    Object.entries(regionMap).forEach(([regionName, side]) => {
+      const feat = bank[regionName];
+      if (!feat) {
+        console.warn(`admin-1 feature not found: ${iso} / "${regionName}"`);
+        return;
+      }
+      const pathD = pathGen(feat);
+      if (!pathD) return;
+      // For SOL (Somaliland) the click should surface Somalia's profile since
+      // there's no standalone SOL entry in DATA.countries.
+      const clickIso = iso === 'SOL' ? 'SOM' : iso;
+      layer.append('path')
+        .attr('d', pathD)
+        .attr('class', 'tint')
+        .attr('fill', tintFillForSide(side))
+        .attr('opacity', side === 'neutral' ? 0.35 : 1)
+        .style('cursor', 'pointer')
+        .on('click', () => selectCountry(clickIso));
+    });
   });
 }
 
@@ -2333,9 +2476,10 @@ window.clearSelection = clearSelection;
 function renderLegend() {
   const legend = document.getElementById('legend');
   const mode = DATA.modes[state.mode];
+  const hatchedLegendIds = new Set(['ash', 'shabaab', 'unrest', 'eritrean', 'contested']);
   const sidesHtml = mode.sides.map(s => {
     let sw;
-    if (s.id === 'ash') sw = `background: repeating-linear-gradient(45deg, ${s.color} 0 3px, transparent 3px 6px); background-color: #FAF8F3;`;
+    if (hatchedLegendIds.has(s.id)) sw = `background: repeating-linear-gradient(45deg, ${s.color} 0 3px, transparent 3px 6px); background-color: #FAF8F3;`;
     else if (s.id === 'neutral') sw = `background: ${s.color}; opacity: 0.5;`;
     else sw = `background: ${s.color}; opacity: 0.55;`;
     return `<span class="legend-swatch"><span class="sw" style="${sw}"></span>${s.label}</span>`;

@@ -2486,13 +2486,13 @@ function initSvg() {
 
   // ---------- Zoom & pan ----------
   // Clamp the user's panning to roughly the region bounded by:
-  //   west  : 13°E  (west of Chad's western border)
-  //   east  : 64°E  (east of Iran's eastern border)
+  //   west  : 15°E  (matches the focus west edge — no pan into empty ocean)
+  //   east  : 60°E  (matches the focus east edge)
   //   north : 42°N  (north of Türkiye's north border)
   //   south : -5°S  (south of Kenya's southern border)
-  // At zoom=1 the current fitSize focus is [15..60, -3..40]; we let users pan
-  // a small amount outside that box, up to these hard walls.
-  const clampBox = [projection([13, 42]), projection([64, -5])];
+  // At zoom=1 the current fitSize focus is [15..60, -10..47]; E-W is locked to
+  // that box so dragging horizontally never reveals empty space beyond it.
+  const clampBox = [projection([15, 42]), projection([60, -5])];
   const translateExtent = [
     [Math.min(clampBox[0][0], clampBox[1][0]), Math.min(clampBox[0][1], clampBox[1][1])],
     [Math.max(clampBox[0][0], clampBox[1][0]), Math.max(clampBox[0][1], clampBox[1][1])],

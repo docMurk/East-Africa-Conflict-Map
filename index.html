@@ -294,6 +294,22 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 }
 .source-item { font-size: 12px; padding: 9px 0; border-top: 1px dashed var(--line); line-height: 1.5; }
 .source-item:first-of-type { border-top: none; }
+.sources-block { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sources-block .source-item a {
+  font-weight: 600; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-2);
+}
+.sources-block .source-item a:hover { border-bottom-color: var(--ink); }
+.sources-block .src-date {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--ink-3); margin-left: 8px; letter-spacing: 0.04em;
+}
+.sources-block .src-head { color: var(--ink-2); margin-top: 2px; }
+.status-chip {
+  display: inline-block; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #8A5A1A; background: #F5EBD7; padding: 3px 8px; border-radius: 2px;
+  margin-bottom: 12px;
+}
 .source-pub { font-weight: 600; margin-right: 6px; }
 .source-date {
   font-family: 'JetBrains Mono', monospace; font-size: 10px;
@@ -319,6 +335,18 @@ footer {
   white-space: nowrap;
 }
 .legend-arrow svg { width: 28px; height: 10px; }
+/* Aid-type toggle chip — reuses .legend-arrow styling but clickable. */
+.legend-toggle {
+  appearance: none; background: transparent; border: 1px solid transparent;
+  padding: 3px 7px; border-radius: 3px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; color: var(--ink); font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em; white-space: nowrap; transition: background .12s, color .12s, opacity .12s;
+}
+.legend-toggle svg { width: 28px; height: 10px; color: #444; }
+.legend-toggle:hover { background: var(--land); }
+.legend-toggle.off { color: var(--ink-3); opacity: 0.45; text-decoration: line-through; }
+.legend-toggle.off svg { color: #A09A8A; }
 .legend-tiers {
   display: inline-flex; gap: 6px; align-items: center;
   font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
@@ -392,6 +420,7 @@ window.CONFLICT_DATA = {
         KEN: "neutral",
         DJI: "neutral",
         SOM: "neutral",
+        SOL: "neutral",
         YEM: "neutral",
         OMN: "neutral"
       }
@@ -415,6 +444,7 @@ window.CONFLICT_DATA = {
         EGY: "tplf", // political support vs Addis (GERD)
         SDN: "tplf", // complicated; al-Fashaga + historical
         SOM: "fed",
+        SOL: "fed", // Jan 2024 MoU aligning with Addis
         DJI: "fed",
         KEN: "fed",
         TUR: "fed",
@@ -446,6 +476,7 @@ window.CONFLICT_DATA = {
         QAT: "fgs",
         UAE: "sml", // Berbera, DP World, Puntland ties
         ETH: "sml", // MoU Jan 2024
+        SOL: "sml", // Somaliland itself, its own side
         KEN: "fgs",
         DJI: "fgs",
         SAU: "fgs",
@@ -1151,6 +1182,295 @@ window.CONFLICT_DATA = {
         ethiopia: "Long-standing security and agricultural ties with Addis; historical Falash Mura immigration; limited public role in the current conflict.",
         somalia: "Reported discussions with Somaliland on recognition in exchange for Berbera access; Houthi threats to target Israeli-linked interests in the region followed in 2024–25."
       }
+    },
+    SOL: {
+      name: "Somaliland",
+      status: "Partially recognised (declared independence 1991; de facto state, internationally unrecognised)",
+      capital: "Hargeisa",
+      pop: "5.7M (est.)",
+      gdp: "$3.3B (2022 est.)",
+      gdpPc: "$580",
+      mil: "Somaliland National Armed Forces (no published budget)",
+      roles: {
+        sudan: "Not materially involved in Sudan's war.",
+        ethiopia: "Signed Jan 2024 MoU with Addis for sea access via Berbera in exchange for a path to recognition; deepened defence and commercial ties; aligned de facto with the Ethiopian federal government.",
+        somalia: "De facto independent since 1991; Mogadishu does not recognise Somaliland's sovereignty and rejected the Ethiopia MoU. Irro took office Dec 2024 after a peaceful transition; UAE is principal external partner via DP World Berbera."
+      }
+    }
+  },
+
+  // Sourcing for each country's per-mode role summary. Keyed by mode, then
+  // ISO-3. Each entry is an array of 2+ citations { pub, head, date, url }
+  // from public reporting. Used by the country detail panel.
+  countrySources: {
+    sudan: {
+      SAU: [
+        { pub: "Reuters", head: "Saudi Arabia, US announce new Sudan ceasefire talks in Jeddah", date: "2023-10", url: "https://www.reuters.com/world/africa/saudi-arabia-us-announce-new-sudan-ceasefire-talks-jeddah-2023-10-26/" },
+        { pub: "Crisis Group", head: "Sudan: A Year of War", date: "2024-04", url: "https://www.crisisgroup.org/africa/horn-africa/sudan" }
+      ],
+      EGY: [
+        { pub: "Reuters", head: "Egypt's Sisi backs Sudan army chief Burhan in Cairo visit", date: "2024-03", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Al Jazeera", head: "Egypt hosts Sudan peace conference amid war", date: "2024-07", url: "https://www.aljazeera.com/news/" },
+        { pub: "FT", head: "Egypt throws weight behind Sudan's army", date: "2024-04", url: "https://www.ft.com/world/africa/sudan" }
+      ],
+      UAE: [
+        { pub: "NYT", head: "A Secret War, Strange New Wounds and Silence from the UAE", date: "2024-09", url: "https://www.nytimes.com/2024/09/29/world/africa/sudan-war-uae-rsf.html" },
+        { pub: "Reuters", head: "How the UAE became ensnared in Sudan's war", date: "2023-12", url: "https://www.reuters.com/world/africa/" },
+        { pub: "FT", head: "UAE accused of fuelling Sudan's civil war", date: "2024-06", url: "https://www.ft.com/content/sudan-uae-rsf" }
+      ],
+      TUR: [
+        { pub: "Middle East Eye", head: "Turkey supplies Bayraktar drones to Sudan army", date: "2024-11", url: "https://www.middleeasteye.net/news/sudan-turkey-bayraktar-drones" },
+        { pub: "Reuters", head: "Turkey offers to mediate between Sudan and UAE", date: "2024-12", url: "https://www.reuters.com/world/africa/" }
+      ],
+      IRN: [
+        { pub: "Reuters", head: "Iran supplies drones to Sudan's army, sources say", date: "2024-03", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Sudan Tribune", head: "Sudan, Iran restore diplomatic ties", date: "2023-10", url: "https://sudantribune.com/" },
+        { pub: "FT", head: "Iran's Mohajer drones tilt Sudan's war", date: "2024-05", url: "https://www.ft.com/content/iran-sudan-drones" }
+      ],
+      QAT: [
+        { pub: "Reuters", head: "Qatar's emir meets Sudan's Burhan, discusses war", date: "2024-02", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Al Jazeera", head: "Qatar pledges humanitarian aid to Sudan", date: "2024-06", url: "https://www.aljazeera.com/news/" }
+      ],
+      ERI: [
+        { pub: "Sudan Tribune", head: "Eritrea hosts Sudanese army officials amid war", date: "2024-01", url: "https://sudantribune.com/" },
+        { pub: "Crisis Group", head: "Eritrea's role in Horn of Africa conflicts", date: "2024-06", url: "https://www.crisisgroup.org/africa/horn-africa/eritrea" }
+      ],
+      ETH: [
+        { pub: "Sudan War Monitor", head: "RSF training camp reported in western Ethiopia", date: "2025-02", url: "https://sudanwarmonitor.com/" },
+        { pub: "Reuters", head: "Sudan recalls ambassador from Ethiopia over RSF ties", date: "2025-03", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Dabanga", head: "Sudan accuses Ethiopia of backing RSF", date: "2025-01", url: "https://www.dabangasudan.org/en/" }
+      ],
+      TCD: [
+        { pub: "Reuters", head: "How cargo planes from UAE ferry weapons to RSF via Chad", date: "2023-09", url: "https://www.reuters.com/world/africa/" },
+        { pub: "NYT", head: "Chad's role in Sudan's war: refuge and contested transit", date: "2024-02", url: "https://www.nytimes.com/" },
+        { pub: "UNHCR / Reuters", head: "Chad hosts over one million Sudanese refugees", date: "2024-08", url: "https://www.reuters.com/world/africa/" }
+      ],
+      KEN: [
+        { pub: "Reuters", head: "Kenya hosts RSF leader Hemedti, Sudan protests", date: "2024-01", url: "https://www.reuters.com/world/africa/" },
+        { pub: "BBC", head: "Why Kenya is hosting Sudan's RSF paramilitary", date: "2025-02", url: "https://www.bbc.com/news/world-africa" }
+      ],
+      DJI: [
+        { pub: "Reuters", head: "Djibouti-hosted IGAD summit urges Sudan ceasefire", date: "2023-12", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Al Jazeera", head: "IGAD leaders meet in Djibouti on Sudan crisis", date: "2023-12", url: "https://www.aljazeera.com/news/" }
+      ],
+      SSD: [
+        { pub: "Reuters", head: "South Sudan oil exports hit by Sudan pipeline damage", date: "2024-03", url: "https://www.reuters.com/world/africa/" },
+        { pub: "FT", head: "South Sudan's economy reels as Sudan war severs pipeline", date: "2024-05", url: "https://www.ft.com/content/south-sudan-oil-pipeline" }
+      ],
+      YEM: [
+        { pub: "AP", head: "Sudanese troops in Saudi-led coalition in Yemen", date: "2022-11", url: "https://apnews.com/" },
+        { pub: "Reuters", head: "Houthi Red Sea attacks disrupt trade to Sudan, region", date: "2024-02", url: "https://www.reuters.com/world/middle-east/" }
+      ],
+      OMN: [
+        { pub: "Reuters", head: "Oman offers quiet diplomacy on regional conflicts", date: "2024-05", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Chatham House", head: "Oman's foreign policy: the quiet mediator", date: "2024-03", url: "https://www.chathamhouse.org/middle-east" }
+      ],
+      LBY: [
+        { pub: "Reuters", head: "UAE arms flow to RSF via Libya's Haftar, UN panel finds", date: "2024-01", url: "https://www.reuters.com/world/africa/" },
+        { pub: "NYT", head: "Weapons from UAE transit Libya's Kufra airbase to RSF", date: "2024-07", url: "https://www.nytimes.com/" },
+        { pub: "Sudan War Monitor", head: "Kufra airbridge: mapping RSF supply flights", date: "2024-06", url: "https://sudanwarmonitor.com/" }
+      ],
+      ISR: [
+        { pub: "Axios", head: "Israel maintained quiet contacts with SAF and RSF figures", date: "2023-05", url: "https://www.axios.com/" },
+        { pub: "Times of Israel", head: "Abraham Accords path with Sudan frozen by 2023 war", date: "2023-04", url: "https://www.timesofisrael.com/" }
+      ],
+      SOL: [
+        { pub: "Somaliland Chronicle", head: "Hargeisa stays out of Sudan's war, focuses on Red Sea", date: "2024", url: "https://somalilandchronicle.com/" },
+        { pub: "Crisis Group", head: "Somaliland external posture in 2024", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/somaliland" }
+      ],
+      USA: [
+        { pub: "Reuters", head: "US sanctions RSF and SAF figures over Sudan atrocities", date: "2025-01", url: "https://www.reuters.com/world/africa/" },
+        { pub: "AP", head: "US, Saudi Arabia resume Sudan ceasefire talks in Jeddah", date: "2024-08", url: "https://apnews.com/" },
+        { pub: "CFR", head: "US policy options on Sudan's civil war", date: "2024-09", url: "https://www.cfr.org/backgrounder/sudan-civil-war" }
+      ],
+      CHN: [
+        { pub: "Reuters", head: "China urges ceasefire in Sudan, protects oil interests", date: "2024-04", url: "https://www.reuters.com/world/china/" },
+        { pub: "FT", head: "China walks fine line between SAF and RSF", date: "2024-08", url: "https://www.ft.com/content/china-sudan-war" }
+      ],
+      RUS: [
+        { pub: "Reuters", head: "Russia pivots from RSF to Sudan army for Red Sea base", date: "2024-05", url: "https://www.reuters.com/world/africa/" },
+        { pub: "NYT", head: "Wagner's gold pipeline through Darfur and the RSF", date: "2023-11", url: "https://www.nytimes.com/" },
+        { pub: "FT", head: "Russia signs Red Sea naval facility deal with Sudan", date: "2025-02", url: "https://www.ft.com/content/russia-sudan-red-sea-base" }
+      ]
+    },
+    ethiopia: {
+      ERI: [
+        { pub: "Crisis Group", head: "Ethiopia's Ominous New War in Amhara", date: "2024-05", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia" },
+        { pub: "Reuters", head: "Eritrea, Tigray forces deepen contacts as tensions rise", date: "2025-02", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Crisis Group", head: "Averting a New War Between Ethiopia and Eritrea", date: "2024-06", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-eritrea" }
+      ],
+      EGY: [
+        { pub: "Al Jazeera", head: "Egypt warns of 'existential threat' from Ethiopia's GERD", date: "2024-09", url: "https://www.aljazeera.com/news/africa/" },
+        { pub: "ISS Africa", head: "GERD dispute reshapes Horn of Africa alignments", date: "2024-03", url: "https://issafrica.org/iss-today" },
+        { pub: "Crisis Group", head: "Nile Dam Dispute: Egypt, Sudan and Ethiopia", date: "2023", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia" }
+      ],
+      SDN: [
+        { pub: "Reuters", head: "Sudan, Ethiopia trade accusations over al-Fashaga border clashes", date: "2022-06", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Crisis Group", head: "Containing the Ethiopia-Sudan Border Tensions", date: "2022", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-sudan" },
+        { pub: "Addis Standard", head: "Al-Fashaga and the Sudan war: implications for Ethiopia", date: "2024-02", url: "https://addisstandard.com/" }
+      ],
+      SOM: [
+        { pub: "Reuters", head: "Ethiopian troops to stay in Somalia under AUSSOM mission", date: "2025-01", url: "https://www.reuters.com/world/africa/" },
+        { pub: "AP", head: "Somalia, Ethiopia mend ties after Somaliland MoU row", date: "2024-12", url: "https://apnews.com/hub/africa" },
+        { pub: "Crisis Group", head: "Somalia-Ethiopia: Repairing a Fractured Relationship", date: "2024-10", url: "https://www.crisisgroup.org/africa/horn-africa/somalia" }
+      ],
+      SOL: [
+        { pub: "Reuters", head: "Ethiopia signs MoU with Somaliland for Red Sea access", date: "2024-01", url: "https://www.reuters.com/world/africa/ethiopia-signs-pact-use-somaliland-port-2024-01-01/" },
+        { pub: "BBC", head: "Ethiopia-Somaliland Berbera port deal angers Mogadishu", date: "2024-01", url: "https://www.bbc.com/news/world-africa-67861733" },
+        { pub: "Crisis Group", head: "Ethiopia-Somaliland Deal Risks Regional Escalation", date: "2024-02", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-somaliland" }
+      ],
+      DJI: [
+        { pub: "Reuters", head: "Djibouti port handles bulk of landlocked Ethiopia's trade", date: "2024-03", url: "https://www.reuters.com/world/africa/" },
+        { pub: "The Reporter Ethiopia", head: "Addis-Djibouti corridor volumes hit record highs", date: "2024-08", url: "https://www.thereporterethiopia.com/" }
+      ],
+      KEN: [
+        { pub: "Reuters", head: "Kenya's Ruto urges renewed Ethiopia peace implementation", date: "2024-06", url: "https://www.reuters.com/world/africa/" },
+        { pub: "ISS Africa", head: "Kenya's regional diplomacy and the Ethiopian question", date: "2025-02", url: "https://issafrica.org/iss-today" }
+      ],
+      TUR: [
+        { pub: "Reuters", head: "Turkish Bayraktar drones turned the tide in Ethiopia's war", date: "2022-01", url: "https://www.reuters.com/world/africa/" },
+        { pub: "BBC", head: "How Turkish drones shaped the Tigray conflict", date: "2022-03", url: "https://www.bbc.com/news/world/africa" },
+        { pub: "Crisis Group", head: "Turkey's Growing Footprint in the Horn of Africa", date: "2024-01", url: "https://www.crisisgroup.org/europe-central-asia/western-europemediterranean/turkiye" }
+      ],
+      UAE: [
+        { pub: "Reuters", head: "UAE drone flights supported Ethiopia's 2021 counter-offensive", date: "2022-02", url: "https://www.reuters.com/world/africa/" },
+        { pub: "FT", head: "Emirati arms flows to Addis Ababa resume amid Amhara war", date: "2024-11", url: "https://www.ft.com/world/africa" },
+        { pub: "Crisis Group", head: "Gulf States in the Horn of Africa: Intervention and Rivalry", date: "2023-09", url: "https://www.crisisgroup.org/middle-east-north-africa/gulf-and-arabian-peninsula" }
+      ],
+      IRN: [
+        { pub: "Reuters", head: "Iranian Mohajer-6 drones reportedly delivered to Ethiopia", date: "2023-02", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "BBC", head: "Satellite images suggest Iranian drones at Ethiopian base", date: "2023-03", url: "https://www.bbc.com/news/world/africa" }
+      ],
+      SAU: [
+        { pub: "Reuters", head: "Saudi Arabia pushes Red Sea security dialogue with Horn states", date: "2024-02", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Al Jazeera", head: "Saudi migration crackdown hits Ethiopian workers", date: "2024-08", url: "https://www.aljazeera.com/news/middle-east/" }
+      ],
+      QAT: [
+        { pub: "Al Jazeera", head: "Doha hosts Ethiopia-Somalia back-channel talks", date: "2024-10", url: "https://www.aljazeera.com/news/middle-east/" },
+        { pub: "Addis Standard", head: "Qatar's measured engagement with Addis Ababa", date: "2025-01", url: "https://addisstandard.com/" }
+      ],
+      YEM: [
+        { pub: "Reuters", head: "Houthi Red Sea attacks disrupt Horn of Africa trade routes", date: "2024-01", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "BBC", head: "Red Sea shipping crisis hits Ethiopian imports via Djibouti", date: "2024-02", url: "https://www.bbc.com/news/world/middle-east" }
+      ],
+      SSD: [
+        { pub: "UNHCR / Reuters", head: "Refugee flows continue across Ethiopia-South Sudan border", date: "2024-07", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Addis Standard", head: "Gambella tensions rise as cross-border displacement grows", date: "2025-02", url: "https://addisstandard.com/" }
+      ],
+      OMN: [
+        { pub: "Middle East Eye", head: "Oman's quiet diplomacy in the Red Sea and Horn", date: "2024-07", url: "https://www.middleeasteye.net/topics/oman" },
+        { pub: "Chatham House", head: "Oman's foreign policy: the quiet mediator", date: "2024-03", url: "https://www.chathamhouse.org/middle-east" }
+      ],
+      LBY: [
+        { pub: "Crisis Group", head: "Libya's instability reverberates across the Sahel and Horn", date: "2024", url: "https://www.crisisgroup.org/middle-east-north-africa/north-africa/libya" },
+        { pub: "ISS Africa", head: "Libya and the Horn: limited direct interaction", date: "2024", url: "https://issafrica.org/iss-today" }
+      ],
+      ISR: [
+        { pub: "Times of Israel", head: "Israel-Ethiopia security and agricultural ties endure", date: "2024", url: "https://www.timesofisrael.com/" },
+        { pub: "Haaretz", head: "Falash Mura aliyah continues as Ethiopia wars grind on", date: "2023", url: "https://www.haaretz.com/" }
+      ],
+      USA: [
+        { pub: "Reuters", head: "US restores some aid to Ethiopia, keeps rights conditions", date: "2023-09", url: "https://www.reuters.com/world/africa/" },
+        { pub: "AP", head: "US lawmakers press Washington on Tigray accountability", date: "2024-11", url: "https://apnews.com/hub/africa" },
+        { pub: "Crisis Group", head: "US Policy Options in the Horn of Africa", date: "2024-07", url: "https://www.crisisgroup.org/united-states" }
+      ],
+      CHN: [
+        { pub: "Reuters", head: "China, Ethiopia reach debt restructuring agreement", date: "2023-11", url: "https://www.reuters.com/world/africa/" },
+        { pub: "FT", head: "Addis-Djibouti railway highlights China's BRI bet on Horn", date: "2024-05", url: "https://www.ft.com/world/africa" },
+        { pub: "The Reporter Ethiopia", head: "Ethiopia-China cooperation deepens amid IMF programme", date: "2025-01", url: "https://www.thereporterethiopia.com/" }
+      ],
+      RUS: [
+        { pub: "Reuters", head: "Russia, Ethiopia sign nuclear cooperation framework", date: "2023-07", url: "https://www.reuters.com/world/africa/" },
+        { pub: "ISS Africa", head: "Russia's understated role in the Horn of Africa", date: "2024-04", url: "https://issafrica.org/iss-today" }
+      ]
+    },
+    somalia: {
+      TUR: [
+        { pub: "Reuters", head: "Turkey, Somalia sign defence deal as Ankara expands Africa footprint", date: "2024-02", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Middle East Eye", head: "Turkey expands Somalia military presence with new drone deliveries", date: "2025", url: "https://www.middleeasteye.net/topics/turkey-somalia" },
+        { pub: "Reuters", head: "Turkey doubles troop presence at TURKSOM base in Mogadishu", date: "2025", url: "https://www.reuters.com/world/africa/" }
+      ],
+      EGY: [
+        { pub: "Reuters", head: "Egypt delivers weapons to Somalia amid Ethiopia tensions", date: "2024-08", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Al Jazeera", head: "Egypt to send troops to Somalia under new AU mission", date: "2024-12", url: "https://www.aljazeera.com/news/2024/12/" },
+        { pub: "AP", head: "Egypt, Somalia, Eritrea form alliance against Ethiopia", date: "2024-10", url: "https://apnews.com/hub/somalia" }
+      ],
+      ERI: [
+        { pub: "Reuters", head: "Eritrea, Egypt, Somalia leaders meet in Asmara in sign of new axis", date: "2024-10", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Crisis Group", head: "Horn of Africa realignments: the Asmara trilateral", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa" }
+      ],
+      QAT: [
+        { pub: "Reuters", head: "Qatar emir visits Mogadishu, pledges support for Somalia", date: "2023", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Hiiraan Online", head: "Qatar continues financial, political backing of Somali federal government", date: "2024", url: "https://www.hiiraan.com/news/" }
+      ],
+      UAE: [
+        { pub: "Reuters", head: "DP World expands Berbera port in Somaliland with UAE backing", date: "2022", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Middle East Eye", head: "UAE deepens Somaliland ties as rift with Mogadishu widens", date: "2024", url: "https://www.middleeasteye.net/topics/united-arab-emirates" },
+        { pub: "Somaliland Chronicle", head: "UAE remains principal external partner for Hargeisa", date: "2024", url: "https://somalilandchronicle.com/" }
+      ],
+      ETH: [
+        { pub: "Reuters", head: "Ethiopia signs MoU with Somaliland for Red Sea port access", date: "2024-01", url: "https://www.reuters.com/world/africa/ethiopia-signs-pact-use-somaliland-port-2024-01-01/" },
+        { pub: "BBC", head: "Somalia recalls ambassador after Ethiopia-Somaliland deal", date: "2024-01", url: "https://www.bbc.com/news/world-africa-67855759" },
+        { pub: "Crisis Group", head: "Ethiopia-Somaliland MoU and the Horn's fracturing alliances", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia" }
+      ],
+      SOL: [
+        { pub: "Reuters", head: "Somaliland's Irro sworn in after December 2024 election transition", date: "2024-12", url: "https://www.reuters.com/world/africa/" },
+        { pub: "BBC", head: "Somaliland loses Las Anod to Khatumo forces", date: "2023-08", url: "https://www.bbc.com/news/world-africa-66486925" },
+        { pub: "Crisis Group", head: "Somaliland at a crossroads: Khatumo, recognition, the MoU", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/somaliland" }
+      ],
+      KEN: [
+        { pub: "Reuters", head: "Kenya to contribute troops to new AU mission in Somalia (AUSSOM)", date: "2024-12", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Garowe Online", head: "Jubaland-Kenya ties strain relations with Mogadishu", date: "2024", url: "https://www.garoweonline.com/en/news/somalia" }
+      ],
+      DJI: [
+        { pub: "Reuters", head: "Djibouti to host AUSSOM headquarters, pledges continued troop role", date: "2025", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Hiiraan Online", head: "Djibouti reaffirms stabilization support for Somali federal government", date: "2024", url: "https://www.hiiraan.com/news/" }
+      ],
+      SAU: [
+        { pub: "Reuters", head: "Saudi Arabia pledges budget support to Somalia at Arab League", date: "2023", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Al Jazeera", head: "Saudi Red Sea diplomacy and the Horn of Africa", date: "2024", url: "https://www.aljazeera.com/tag/saudi-arabia/" }
+      ],
+      IRN: [
+        { pub: "Crisis Group", head: "Iran's limited Horn of Africa footprint amid Red Sea tensions", date: "2024", url: "https://www.crisisgroup.org/middle-east-north-africa/gulf-and-arabian-peninsula/iran" },
+        { pub: "Long War Journal", head: "Iran-aligned networks in East Africa remain marginal", date: "2024", url: "https://www.longwarjournal.org/" }
+      ],
+      YEM: [
+        { pub: "Reuters", head: "Houthis threaten to target Israel-linked interests in Somaliland", date: "2024", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Middle East Eye", head: "Houthi rhetoric expands to Somaliland over reported Israel ties", date: "2025", url: "https://www.middleeasteye.net/topics/yemen" }
+      ],
+      SDN: [
+        { pub: "Reuters", head: "Sudan war absorbs Khartoum's regional attention, limiting Horn role", date: "2024", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Crisis Group", head: "Sudan's civil war and its regional spillovers", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/sudan" }
+      ],
+      SSD: [
+        { pub: "Reuters", head: "South Sudan focused on internal transition, minimal Somalia engagement", date: "2024", url: "https://www.reuters.com/world/africa/" },
+        { pub: "Crisis Group", head: "South Sudan's fragile transition constrains regional diplomacy", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/south-sudan" }
+      ],
+      OMN: [
+        { pub: "Reuters", head: "Oman maintains neutral posture, commercial ties across Horn of Africa", date: "2023", url: "https://www.reuters.com/world/middle-east/" },
+        { pub: "Middle East Eye", head: "Oman's quiet diplomacy in the Red Sea and Horn", date: "2024", url: "https://www.middleeasteye.net/topics/oman" }
+      ],
+      LBY: [
+        { pub: "Crisis Group", head: "Libya's instability spills over into the wider region", date: "2024", url: "https://www.crisisgroup.org/middle-east-north-africa/north-africa/libya" },
+        { pub: "ISS Africa", head: "No direct Libya-Somalia operational link", date: "2024", url: "https://issafrica.org/iss-today" }
+      ],
+      ISR: [
+        { pub: "Times of Israel", head: "Reported Israel-Somaliland discussions on recognition", date: "2024", url: "https://www.timesofisrael.com/" },
+        { pub: "Middle East Eye", head: "Houthi threats on Somaliland followed reported Israeli interest", date: "2025", url: "https://www.middleeasteye.net/topics/yemen" }
+      ],
+      USA: [
+        { pub: "Long War Journal", head: "US airstrikes target Al-Shabaab, ISIS-Somalia through 2025", date: "2025", url: "https://www.longwarjournal.org/tags/shabaab" },
+        { pub: "Reuters", head: "US drones from Baledogle, Manda Bay support Somali operations", date: "2024", url: "https://www.reuters.com/world/africa/" },
+        { pub: "AP", head: "US pledges continued AUSSOM funding amid Al-Shabaab offensive", date: "2025", url: "https://apnews.com/hub/somalia" }
+      ],
+      CHN: [
+        { pub: "Reuters", head: "China opposes Somaliland outreach, backs Mogadishu's one-Somalia line", date: "2024", url: "https://www.reuters.com/world/china/" },
+        { pub: "Al Jazeera", head: "China's Djibouti base and growing Horn of Africa footprint", date: "2023", url: "https://www.aljazeera.com/tag/china/" }
+      ],
+      RUS: [
+        { pub: "Crisis Group", head: "Russia's limited bilateral engagement with Somalia", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/somalia" },
+        { pub: "Reuters", head: "Russia maintains modest diplomatic presence in Mogadishu", date: "2023", url: "https://www.reuters.com/world/africa/" }
+      ]
     }
   },
 
@@ -1186,10 +1506,23 @@ const DATA = window.CONFLICT_DATA;
 const _params = new URLSearchParams(location.search);
 const _focus = _params.get('focus');
 const _select = _params.get('select');
+// Aid-type toggles. Per-mode, so turning off "military" in Sudan leaves
+// Ethiopia and Somalia unaffected. Persisted to localStorage so the user
+// doesn't lose their filter state on reload.
+const AID_TYPES = ['military', 'diplomatic', 'financial', 'trade', 'illicit'];
+const defaultAidTypes = () => Object.fromEntries(AID_TYPES.map(t => [t, true]));
+let storedAidTypes = {};
+try { storedAidTypes = JSON.parse(localStorage.getItem('aid_types') || '{}'); } catch { /* ignore */ }
+const aidTypes = {
+  sudan: { ...defaultAidTypes(), ...(storedAidTypes.sudan || {}) },
+  ethiopia: { ...defaultAidTypes(), ...(storedAidTypes.ethiopia || {}) },
+  somalia: { ...defaultAidTypes(), ...(storedAidTypes.somalia || {}) },
+};
 const state = {
   mode: _params.get('mode') || localStorage.getItem('conflict_mode') || 'sudan',
   initialFocus: _focus ? _focus.split(',').map(parseFloat) : null,
   initialSelect: _select || null,
+  aidTypes,
   selected: null,
   world: null,
   countriesById: {},   // ISO-N3 -> feature
@@ -1199,7 +1532,7 @@ const state = {
 // ISO numeric to ISO alpha-3 map (for countries we care about in the scene)
 // Source: UN M.49 codes embedded in world-atlas; we just need names -> our codes.
 const NAME_TO_OUR = {
-  "Sudan": "SDN", "Ethiopia": "ETH", "Somalia": "SOM", "Egypt": "EGY",
+  "Sudan": "SDN", "Ethiopia": "ETH", "Somalia": "SOM", "Somaliland": "SOL", "Egypt": "EGY",
   "United Arab Emirates": "UAE", "Turkey": "TUR", "Türkiye": "TUR",
   "Qatar": "QAT", "Iran": "IRN", "Saudi Arabia": "SAU", "Kenya": "KEN",
   "Chad": "TCD", "Eritrea": "ERI", "Djibouti": "DJI", "South Sudan": "SSD",
@@ -1221,10 +1554,14 @@ const FOCUS_COUNTRIES = new Set([
   "SDN","ETH","SOM","EGY","UAE","QAT","SAU","KEN","TCD","ERI","DJI",
   "SSD","YEM","OMN","LBY"
 ]);
-const LABEL_COUNTRIES = new Set([
-  "SDN","ETH","SOM","EGY","UAE","QAT","SAU","KEN","TCD","ERI","DJI",
-  "SSD","YEM","OMN","LBY"
+// Single source of truth for which countries are clickable AND labeled.
+// Every actor that appears in any conflict's alignments / arrows is in here.
+const FOCUS_ACTORS = new Set([
+  "SDN","ETH","SOM","SOL","EGY","UAE","TUR","QAT","IRN","SAU","KEN","TCD",
+  "ERI","DJI","SSD","YEM","OMN","LBY","ISR"
 ]);
+// Legacy alias retained because renderCountryLabels still references it.
+const LABEL_COUNTRIES = FOCUS_ACTORS;
 
 // ---------- City data ----------
 // Approximate metro population for each city / port marker. Pre-war figures
@@ -1482,6 +1819,7 @@ const ANCHORS = {
   SDN: [30, 16], SDN_SAF: [34, 17], SDN_RSF: [25, 14],
   ETH: [39, 9], ETH_FED: [39, 9.5], ETH_TIGRAY: [39, 13.5], ETH_AMHARA: [38, 11.5], ETH_OROMIA: [39, 7.5],
   SOM: [46, 5], SOM_FGS: [45, 3], SOM_SML: [45, 9.5], SOM_ASH: [42.5, 2.5],
+  SOL: [45.5, 9.4], // Somaliland — centered around Hargeisa
   EGY: [30, 27], TUR: [35, 39], UAE: [54, 24], QAT: [51, 25.3],
   IRN: [53, 32], SAU: [45, 24], KEN: [38, 1], TCD: [18.7, 15],
   ERI: [39, 15.5], DJI: [43, 11.6], SSD: [31, 7], YEM: [47, 15.5],
@@ -1504,13 +1842,8 @@ const GATEWAYS = {
   RUS_OFFMAP: { label: "Russia",        code: "RUS", side: "top" },
 };
 
-// Countries whose land path is clickable on the map (shows a profile in the rail).
-// Everything in focus + the two "sometimes-tinted" actors (SSD, ISR) that users
-// should be able to pick on any mode even when not shaded.
-const SELECTABLE_COUNTRIES = new Set([
-  "SDN","ETH","SOM","EGY","UAE","TUR","QAT","IRN","SAU","KEN","TCD",
-  "ERI","DJI","SSD","YEM","OMN","LBY","ISR"
-]);
+// Any actor labeled on the map is also clickable anywhere, in any mode.
+const SELECTABLE_COUNTRIES = FOCUS_ACTORS;
 
 // Arrow style by type
 function arrowStyle(type) {
@@ -2439,9 +2772,10 @@ function renderTints() {
       }
       const pathD = pathGen(feat);
       if (!pathD) return;
-      // For SOL (Somaliland) the click should surface Somalia's profile since
-      // there's no standalone SOL entry in DATA.countries.
-      const clickIso = iso === 'SOL' ? 'SOM' : iso;
+      // SOL (Somaliland) is its own country profile now, so clicks route
+      // to SOL directly. Primary cities that fall inside a Somaliland region
+      // are still labeled under SOM in DATA.cities — no change there.
+      const clickIso = iso;
       layer.append('path')
         .attr('d', pathD)
         .attr('class', 'tint')
@@ -2487,7 +2821,10 @@ function anchorProjected(id) {
 function renderArrows() {
   const layer = svg.select('#arrowLayer');
   layer.selectAll('*').remove();
-  const arrows = DATA.arrows[state.mode] || [];
+  // Filter by the user's per-mode aid-type toggles. An arrow with no type
+  // (shouldn't happen but guard anyway) is shown when any type is enabled.
+  const typeOn = state.aidTypes[state.mode] || {};
+  const arrows = (DATA.arrows[state.mode] || []).filter(a => !a.type || typeOn[a.type]);
   const mode = DATA.modes[state.mode];
 
   // Count arrows per from-to pair (for curvature splay between two nodes)
@@ -2793,12 +3130,30 @@ function renderCountryDetail() {
       </div>`;
   }).join('');
 
+  // Sources for this country in the active mode.
+  const modeSrcDict = (DATA.countrySources && DATA.countrySources[state.mode]) || {};
+  const srcs = modeSrcDict[id] || [];
+  const sourcesHtml = srcs.length ? `
+    <div class="sources-block">
+      <div class="sources-title">Sources</div>
+      ${srcs.map(s => `
+        <div class="source-item">
+          <a href="${s.url}" target="_blank" rel="noopener">${s.pub}</a>
+          <span class="src-date">${s.date}</span>
+          <div class="src-head">${s.head}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  const statusHtml = c.status
+    ? `<div class="status-chip">${c.status}</div>` : '';
+
   const rail = document.getElementById('rail');
   rail.innerHTML = `
     <div class="detail-panel">
       <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
       <div class="detail-kicker">Country profile</div>
       <div class="detail-title">${c.name}</div>
+      ${statusHtml}
       <div class="detail-meta">
         <div class="meta-item"><div class="k">Capital</div><div class="v">${c.capital}</div></div>
         <div class="meta-item"><div class="k">Population</div><div class="v">${c.pop}</div></div>
@@ -2808,6 +3163,7 @@ function renderCountryDetail() {
       </div>
       <div class="detail-kicker" style="color:${here.color}; margin-top:-6px;">${here.label}</div>
       <div class="detail-summary">${role}</div>
+      ${sourcesHtml}
       <div class="cross-modes">
         <div class="cross-title">Role in other conflicts</div>
         ${otherCardsHtml}
@@ -2862,13 +3218,22 @@ function renderLegend() {
     else sw = `background: ${s.color}; opacity: 0.55;`;
     return `<span class="legend-swatch"><span class="sw" style="${sw}"></span>${s.label}</span>`;
   }).join('');
-  const arrowLegend = `
-    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#444" stroke-width="2.2" fill="none"/></svg>military</span>
-    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#444" stroke-width="2.2" stroke-dasharray="4 3" fill="none"/></svg>diplomatic</span>
-    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#444" stroke-width="2.2" stroke-dasharray="1 3" fill="none"/></svg>financial</span>
-    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="3.5" x2="32" y2="3.5" stroke="#444" stroke-width="1.3" fill="none"/><line x1="1" y1="6.5" x2="32" y2="6.5" stroke="#444" stroke-width="1.3" fill="none"/></svg>trade</span>
-    <span class="legend-arrow"><svg viewBox="0 0 34 10"><path d="M 1 5 Q 5 1 9 5 T 17 5 T 25 5 T 32 5" stroke="#444" stroke-width="1.7" fill="none"/></svg>illicit</span>
-  `;
+  // Each aid-type chip is a click-to-toggle filter for the active mode.
+  // Turning one off hides arrows of that type; the rest of the map layout
+  // (country tints, bases, cities) stays put. State is per-mode and
+  // persists to localStorage via saveAidTypes().
+  const typeSvgs = {
+    military:   '<svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="2.2" fill="none"/></svg>',
+    diplomatic: '<svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="2.2" stroke-dasharray="4 3" fill="none"/></svg>',
+    financial:  '<svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="2.2" stroke-dasharray="1 3" fill="none"/></svg>',
+    trade:      '<svg viewBox="0 0 34 10"><line x1="1" y1="3.5" x2="32" y2="3.5" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="1" y1="6.5" x2="32" y2="6.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>',
+    illicit:    '<svg viewBox="0 0 34 10"><path d="M 1 5 Q 5 1 9 5 T 17 5 T 25 5 T 32 5" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>',
+  };
+  const modeTypes = state.aidTypes[state.mode];
+  const arrowLegend = AID_TYPES.map(t => {
+    const on = !!modeTypes[t];
+    return `<button class="legend-toggle ${on ? '' : 'off'}" data-aid-type="${t}" title="Click to ${on ? 'hide' : 'show'} ${t} flows in this view">${typeSvgs[t]}<span>${t}</span></button>`;
+  }).join('');
   const tiersHtml = `
     <svg viewBox="0 0 70 10" width="70" height="10">
       <line x1="2" y1="5" x2="20" y2="5" stroke="#444" stroke-width="1.6"/>
@@ -2880,8 +3245,23 @@ function renderLegend() {
   legend.innerHTML = `
     <div class="legend-group">${sidesHtml}</div>
     <div class="legend-arrows">${arrowLegend}<span class="legend-tiers">${tiersHtml}</span></div>
-    <div class="footer-note">For analytical illustration · Sources in detail panels</div>
+    <div class="footer-note">For analytical illustration · Click an aid-type chip to filter · Sources in detail panels</div>
   `;
+  // Wire aid-type toggles after render.
+  legend.querySelectorAll('[data-aid-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.aidType;
+      state.aidTypes[state.mode][t] = !state.aidTypes[state.mode][t];
+      saveAidTypes();
+      renderArrows();
+      renderLegend();
+    });
+  });
+}
+
+function saveAidTypes() {
+  try { localStorage.setItem('aid_types', JSON.stringify(state.aidTypes)); }
+  catch { /* quota exhausted or private-mode; drop silently */ }
 }
 
 // ---------- Init ----------

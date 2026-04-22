@@ -425,16 +425,20 @@ window.CONFLICT_DATA = {
       sides: [
         { id: "fed", label: "Federal government (Addis)", color: "#2F5233" },
         { id: "tplf", label: "TPLF / Tigray & aligned fronts", color: "#C08A3E" },
+        { id: "tplf-leaning", label: "TPLF-leaning (complicated)", color: "#C08A3E" },
         { id: "unrest", label: "Active insurgency (Fano, OLA)", color: "#9A3B2E" },
         { id: "eritrean", label: "Reported Eritrean presence", color: "#6B2E5E" },
         { id: "contested", label: "Contested / mixed", color: "#8A857A" },
         { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
       ],
       // Sides mapping: 'fed' (federal-controlled), 'tplf' (Tigray held by TPLF),
-      // 'unrest' (active insurgency), 'eritrean' (reported Eritrean presence),
-      // 'contested' (mixed/overlap). External actors stay country-level.
+      // 'tplf-leaning' (external actor backing TPLF/anti-Addis but with a complicated
+      // or hedged posture — rendered as TPLF yellow with a gray contested-hatch
+      // overlay, same stripe as Chad in Sudan mode), 'unrest' (active insurgency),
+      // 'eritrean' (reported Eritrean presence), 'contested' (mixed/overlap).
+      // External actors stay country-level.
       alignments: {
-        ERI: "fed", // historically against TPLF; note: reported recent rapprochement w/ Debretsion faction
+        ERI: "tplf-leaning", // 2026: Asmara now backs Debretsion TPLF wing & hosts Fano trainees (CSM Apr 2026) — once pro-Addis, now adversarial
         EGY: "tplf", // political support vs Addis (GERD)
         SDN: "tplf", // complicated; al-Fashaga + historical
         SOM: "fed",
@@ -514,6 +518,7 @@ window.CONFLICT_DATA = {
   //     - Crisis Group Ethiopia briefings (2024–2026)
   //     - ACLED Ethiopia dashboard
   //     - Addis Standard reporting on TPLF split / TIRA leadership change (Mar 2025)
+  //     - Christian Science Monitor, "Ethiopia–Eritrea conflict", 2 Apr 2026
   //   Key notes:
   //     - Tigray tagged "contested": Pretoria implementation partial; TPLF split between
   //       Getachew Reda faction and Debretsion faction; TIRA weak; risk of renewed war flagged.
@@ -526,6 +531,12 @@ window.CONFLICT_DATA = {
   //       a separate NE feature, so folded into Tigray at this resolution.
   //     - Eritrean presence reported in Irob/Gulomakeda (E. Tigray) and N. Afar border —
   //       not full-region control, noted in prose rather than region tags.
+  //     - Country-level ERI alignment shifted from "fed" (historical 2020–22 ally) to
+  //       "tplf-leaning" (Apr 2026): Asmara now backs the Debretsion TPLF wing and is
+  //       reportedly hosting Fano trainees. Rendered as TPLF yellow with a contested-
+  //       stripe overlay (same hatch Chad wears in Sudan mode) to flag the hedged,
+  //       complicated posture rather than a clean alliance. Historical eri-fed arrow
+  //       retained but flagged 2020–22. See CSM, 2 Apr 2026.
   //
   // SOMALIA (Somalia mode) — snapshot date: 22 April 2026
   //   Primary sources:
@@ -1066,15 +1077,16 @@ window.CONFLICT_DATA = {
       },
       {
         id: "eri-tplf",
-        from: "ERI", to: "ETH_TIGRAY", side: "tplf",
+        from: "ERI", to: "ETH_TIGRAY", side: "tplf-leaning",
         type: "military", tier: 2,
-        title: "Eritrea → TPLF (Debretsion faction, alleged)",
-        dates: "2024–2026 (alleged / reported)",
-        summary: "Post-2023 TPLF split between Getachew Reda (Addis-aligned) and Debretsion Gebremichael (Asmara-leaning); reports of Eritrean logistical and communications support to Debretsion wing as Asmara hedges against a post-Abiy Ethiopia.",
+        title: "Eritrea → TPLF (Debretsion faction)",
+        dates: "2024–2026",
+        summary: "Post-2023 TPLF split between Getachew Reda (Addis-aligned) and Debretsion Gebremichael (Asmara-leaning); Eritrean logistical and communications support to the Debretsion wing has grown as Asmara hedges against a post-Abiy Ethiopia. Reflected on the map by tinting Eritrea with TPLF yellow plus a contested-stripe overlay to flag the hedged, still-complicated posture.",
         sources: [
           { pub: "Crisis Group", head: "Ethiopia and Eritrea on a collision course", date: "2025", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-eritrea" },
           { pub: "Addis Standard", head: "Tigray intra-party split", date: "2024", url: "https://addisstandard.com/" },
-          { pub: "Africa Confidential", head: "Asmara's Tigray play", date: "2025", url: "https://www.africa-confidential.com/" }
+          { pub: "Africa Confidential", head: "Asmara's Tigray play", date: "2025", url: "https://www.africa-confidential.com/" },
+          { pub: "Christian Science Monitor", head: "Ethiopia–Eritrea conflict", date: "2 Apr 2026", url: "https://www.csmonitor.com/World/Africa/2026/0402/Ethiopia-Eritrea-conflict" }
         ]
       },
       {
@@ -1461,7 +1473,7 @@ window.CONFLICT_DATA = {
     ERI: { name: "Eritrea", capital: "Asmara", pop: "3.7M", gdp: "$2.6B (2023 est.)", gdpPc: "$700", mil: "n/a",
       roles: {
         sudan: "Aligned with SAF; hosts Beja/eastern Sudan networks.",
-        ethiopia: "Fought alongside ENDF in Tigray 2020–22; now at odds with Addis.",
+        ethiopia: "Former ENDF ally (Tigray 2020–22) now backing the Debretsion TPLF wing and reportedly hosting Fano trainees; posture remains hedged — hence the TPLF-yellow tint with a contested-stripe overlay.",
         somalia: "Joined Asmara trilateral axis Oct 2024."
       }
     },
@@ -1663,7 +1675,8 @@ window.CONFLICT_DATA = {
       ERI: [
         { pub: "Crisis Group", head: "Ethiopia's Ominous New War in Amhara", date: "2024-05", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia" },
         { pub: "Reuters", head: "Eritrea, Tigray forces deepen contacts as tensions rise", date: "2025-02", url: "https://www.reuters.com/world/africa/" },
-        { pub: "Crisis Group", head: "Averting a New War Between Ethiopia and Eritrea", date: "2024-06", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-eritrea" }
+        { pub: "Crisis Group", head: "Averting a New War Between Ethiopia and Eritrea", date: "2024-06", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-eritrea" },
+        { pub: "Christian Science Monitor", head: "Ethiopia–Eritrea conflict", date: "2026-04-02", url: "https://www.csmonitor.com/World/Africa/2026/0402/Ethiopia-Eritrea-conflict" }
       ],
       EGY: [
         { pub: "Al Jazeera", head: "Egypt warns of 'existential threat' from Ethiopia's GERD", date: "2024-09", url: "https://www.aljazeera.com/news/africa/" },
@@ -3129,6 +3142,14 @@ function tintFillForSide(side) {
   return `url(#solid-${side})`;
 }
 
+// Some sides need a solid tint plus a second overlay (e.g. 'tplf-leaning'
+// paints TPLF yellow with the gray contested-hatch on top — the same stripe
+// Chad wears in Sudan mode). Returns fills in paint order (base first).
+function layeredFillsForSide(side) {
+  if (side === 'tplf-leaning') return ['url(#solid-tplf)', 'url(#contested-hatch)'];
+  return [tintFillForSide(side)];
+}
+
 function renderTints() {
   const layer = svg.select('#tintLayer');
   layer.selectAll('*').remove();
@@ -3144,13 +3165,16 @@ function renderTints() {
     if (!feat) return;
     const pathD = pathGen(feat);
     if (!pathD) return;
-    layer.append('path')
-      .attr('d', pathD)
-      .attr('class', 'tint')
-      .attr('fill', tintFillForSide(side))
-      .attr('opacity', side === 'neutral' ? 0.35 : 1)
-      .style('cursor', 'pointer')
-      .on('click', () => selectCountry(iso));
+    const fills = layeredFillsForSide(side);
+    fills.forEach(fill => {
+      layer.append('path')
+        .attr('d', pathD)
+        .attr('class', 'tint')
+        .attr('fill', fill)
+        .attr('opacity', side === 'neutral' ? 0.35 : 1)
+        .style('cursor', 'pointer')
+        .on('click', () => selectCountry(iso));
+    });
   });
 
   // 2) Admin-1 tints. For Sudan-mode Libya we may only tag a subset of shabiyat;
@@ -3609,7 +3633,8 @@ function renderLegend() {
   const hatchedLegendIds = new Set(['ash', 'shabaab', 'unrest', 'eritrean', 'contested']);
   const sidesHtml = mode.sides.map(s => {
     let sw;
-    if (hatchedLegendIds.has(s.id)) sw = `background: repeating-linear-gradient(45deg, ${s.color} 0 3px, transparent 3px 6px); background-color: #FAF8F3;`;
+    if (s.id === 'tplf-leaning') sw = `background: repeating-linear-gradient(45deg, #7C766A 0 1.2px, transparent 1.2px 4px), ${s.color}; opacity: 0.75;`;
+    else if (hatchedLegendIds.has(s.id)) sw = `background: repeating-linear-gradient(45deg, ${s.color} 0 3px, transparent 3px 6px); background-color: #FAF8F3;`;
     else if (s.id === 'neutral') sw = `background: ${s.color}; opacity: 0.5;`;
     else sw = `background: ${s.color}; opacity: 0.55;`;
     return `<span class="legend-swatch"><span class="sw" style="${sw}"></span>${s.label}</span>`;

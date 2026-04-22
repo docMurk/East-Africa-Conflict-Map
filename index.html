@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Horn & the Nile — Overlapping Conflicts in East Africa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAF8F3;
+  --panel: #FFFFFF;
+  --ink: #1A1A1A;
+  --ink-2: #555;
+  --ink-3: #8A8A85;
+  --line: #E3DFD5;
+  --line-2: #CEC8B8;
+  --land: #EFEBDF;
+  --land-2: #E7E2D3;
+  --water: #E4ECF0;
+  --neutral: #D8D4CA;
+  --saf: #1F3A5F;
+  --rsf: #B8413A;
+  --fed: #2F5233;
+  --tplf: #C08A3E;
+  --fgs: #2A7373;
+  --sml: #6B4A8E;
+  --ash: #7A2A2A;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow: hidden;
+  height: 100vh;
+}
+.app { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+header {
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: end; padding: 20px 28px 16px; border-bottom: 1px solid var(--line); gap: 24px;
+}
+.title { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+.subtitle {
+  font-size: 11px; color: var(--ink-3); margin-top: 4px;
+  letter-spacing: 0.1em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
+}
+.mode-toggle {
+  display: inline-flex; border: 1px solid var(--line-2); border-radius: 2px;
+  overflow: hidden; background: var(--panel);
+}
+.mode-toggle button {
+  appearance: none; background: var(--panel); border: none;
+  border-right: 1px solid var(--line); padding: 9px 18px;
+  font-family: inherit; font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-2); cursor: pointer;
+  transition: background .15s, color .15s; font-weight: 500;
+}
+.mode-toggle button:last-child { border-right: none; }
+.mode-toggle button:hover { background: var(--land); }
+.mode-toggle button.active { background: var(--ink); color: #fff; font-weight: 600; }
+
+main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
+.map-wrap { position: relative; background: var(--water); overflow: hidden; border-right: 1px solid var(--line); }
+#mapSvg { width: 100%; height: 100%; display: block; }
+
+.sea-bg { fill: var(--water); }
+.land { fill: var(--land); stroke: none; }
+.context-land { fill: var(--land-2); stroke: none; }
+.border { fill: none; stroke: var(--line-2); stroke-width: 0.5px; stroke-linejoin: round; }
+.border-inner { fill: none; stroke: #B8B2A0; stroke-width: 0.45px; stroke-dasharray: 2 2; }
+.coast { fill: none; stroke: #A9B9C2; stroke-width: 0.6px; }
+.river { fill: none; stroke: #A6BDCB; stroke-width: 1.1px; opacity: 0.85; stroke-linecap: round; }
+.river.river-sm { stroke-width: 0.8px; opacity: 0.75; }
+.graticule { fill: none; stroke: #D8D4C8; stroke-width: 0.3px; opacity: 0.5; }
+
+/* Sea fill that sits inside the zoom group so pan reveals water, not canvas */
+.sea-bg-inner { fill: var(--water); }
+
+/* Zoom counter-scaling via SVG's native non-scaling-stroke. This keeps line
+   weights visually constant regardless of zoom scale without us having to
+   divide by --k on every rule. Font sizes and marker sizes still use --k. */
+#mapRoot { --k: 1; }
+#mapRoot .border,
+#mapRoot .river,
+#mapRoot .graticule,
+#mapRoot .tint,
+#mapRoot .city-ring,
+#mapRoot .arrow,
+#mapRoot .arrow-halo,
+#mapRoot .port-marker,
+#mapRoot .base-marker,
+#mapRoot .feature-dot,
+#mapRoot .gateway-bg,
+#mapRoot .gateway-dot-outer,
+#mapRoot .gateway-dot-inner {
+  vector-effect: non-scaling-stroke;
+}
+
+#mapRoot .country-label   { font-size: calc(10.5px / var(--k)); stroke-width: calc(2.5px / var(--k)); }
+#mapRoot .country-label.small { font-size: calc(9px / var(--k)); stroke-width: calc(2px / var(--k)); }
+#mapRoot .city-label      { font-size: calc(10px / var(--k)); stroke-width: calc(2.5px / var(--k)); }
+#mapRoot .city-label.secondary { font-size: calc(8.5px / var(--k)); stroke-width: calc(2px / var(--k)); fill: #55544E; font-style: italic; }
+#mapRoot .geo-label       { font-size: calc(10.5px / var(--k)); stroke-width: calc(2.5px / var(--k)); }
+#mapRoot .geo-label.large { font-size: calc(14px / var(--k)); }
+#mapRoot .feature-label   { font-size: calc(9.5px / var(--k)); stroke-width: calc(2px / var(--k)); }
+#mapRoot .terrain-label {
+  font-family: 'Instrument Serif', 'Playfair Display', Georgia, serif;
+  font-size: calc(11px / var(--k));
+  font-style: italic;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  fill: #7D6B3A;
+  pointer-events: none;
+  paint-order: stroke fill;
+  stroke: var(--land);
+  stroke-width: calc(2.5px / var(--k));
+}
+#mapRoot .terrain-label.large { font-size: calc(14px / var(--k)); letter-spacing: 0.32em; fill: #8C7840; }
+#mapRoot .river-label { fill: #7A99AA; font-style: italic; }
+#mapRoot .river-label.sm { font-size: calc(8.5px / var(--k)); }
+#mapRoot .port-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: calc(8px / var(--k));
+  fill: #3A4B55;
+  pointer-events: none;
+  paint-order: stroke fill;
+  stroke: var(--land);
+  stroke-width: calc(1.8px / var(--k));
+}
+#mapRoot .port-marker { fill: #3A4B55; stroke: #FAF8F3; stroke-width: 0.8px; }
+#mapRoot .base-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: calc(9.5px / var(--k));
+  fill: #2C2A26;
+  font-weight: 600;
+  pointer-events: none;
+  paint-order: stroke fill;
+  stroke: var(--land);
+  stroke-width: calc(2.2px / var(--k));
+}
+#mapRoot .base-marker { stroke: #1A1A1A; stroke-width: 0.6px; }
+/* Clustered base labels: the anchor group is positioned by JS each zoom
+   tick so labels sit at a constant screen offset from their markers. */
+.base-leader { stroke: #6B6460; stroke-width: 0.8px; opacity: 0.7; fill: none; vector-effect: non-scaling-stroke; }
+/* The anchor group already applies scale(1/k), so reset --k inside it so
+   the cascaded `calc(8px / var(--k))` rules render at their literal size. */
+.base-label-anchor { --k: 1; }
+/* Marker anchors are also counter-scaled each zoom tick so the triangle
+   stays ~constant pixel size — prevents overlap when zoomed in. */
+.base-marker-anchor { --k: 1; }
+.base-marker-anchor .base-marker { stroke-width: 0.8px; }
+
+/* The zoom surface gets a grabby cursor so users know it's pannable. */
+#mapSvg { cursor: grab; }
+#mapSvg:active { cursor: grabbing; }
+
+.country-label {
+  font-size: 10.5px; fill: #5C5A52; font-weight: 500;
+  letter-spacing: 0.04em; pointer-events: none; text-anchor: middle;
+  text-transform: uppercase; paint-order: stroke fill;
+  stroke: var(--land); stroke-width: 2.5px;
+}
+.country-label.small { font-size: 9px; fill: #7B7A72; stroke-width: 2px; }
+.country-label.sea { stroke: var(--water); }
+
+.city-dot { fill: #1A1A1A; }
+.city-dot.capital { fill: #1A1A1A; }
+.city-ring { fill: none; stroke: #1A1A1A; stroke-width: 1; }
+.city-label {
+  font-size: 10px; fill: var(--ink); font-family: 'JetBrains Mono', monospace;
+  pointer-events: none; paint-order: stroke fill;
+  stroke: var(--land); stroke-width: 2.5px; stroke-linejoin: round;
+}
+.city-label.capital { font-weight: 600; }
+.city-label.sea { stroke: var(--water); }
+
+.geo-label {
+  font-style: italic; fill: #7A99AA; font-size: 10.5px;
+  pointer-events: none; letter-spacing: 0.04em;
+  paint-order: stroke fill; stroke: var(--water); stroke-width: 2.5px;
+}
+.geo-label.large { font-size: 14px; letter-spacing: 0.22em; text-transform: uppercase; fill: #9EB4C0; }
+.feature-label { fill: #6B6A62; font-size: 9.5px; font-family: 'JetBrains Mono', monospace; pointer-events: none; paint-order: stroke fill; stroke: var(--land); stroke-width: 2px; }
+.feature-dot { fill: none; stroke: #555; stroke-width: 0.8; }
+
+.tint { stroke: var(--line-2); stroke-width: 0.5; cursor: pointer; transition: opacity .15s; }
+.tint:hover { opacity: 0.82 !important; }
+
+.arrow { fill: none; cursor: pointer; transition: opacity .15s; }
+.arrow-halo { fill: none; stroke: transparent; }
+.arrow-origin { stroke: #FAF8F3; stroke-width: 1.2; }
+#mapRoot .arrow { stroke-width: calc(var(--arrow-w, 2px) / var(--k)); }
+#mapRoot .gateway-label { font-size: calc(10px / var(--k)); }
+#mapRoot .gateway-bg { stroke-width: calc(0.8px / var(--k)); }
+#mapRoot .gateway-dot-outer { r: calc(4px / var(--k)); stroke-width: calc(1.4px / var(--k)); }
+#mapRoot .gateway-dot-inner { r: calc(1.4px / var(--k)); }
+#mapRoot .gateway-bg { transform-box: fill-box; transform-origin: center; transform: scale(calc(1 / var(--k))); }
+
+/* Off-map "gateway" markers — labelled anchors for actors outside the focus area */
+.gateway-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  fill: var(--ink);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.gateway-bg {
+  fill: rgba(250, 248, 243, 0.92);
+  stroke: var(--line);
+  stroke-width: 0.8;
+}
+.gateway-dot-outer {
+  fill: var(--ink);
+  stroke: #FAF8F3;
+  stroke-width: 1.4;
+}
+.gateway-dot-inner { fill: #FAF8F3; }
+.gateway:hover .gateway-bg { fill: #F1EEE5; }
+
+.rail { background: var(--panel); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.rail-inner { overflow-y: auto; padding: 20px 22px; flex: 1; }
+.rail-section-title {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3); font-family: 'JetBrains Mono', monospace;
+  margin: 0 0 14px 0; font-weight: 500;
+}
+.rail-desc { font-size: 12px; color: var(--ink-2); margin: -6px 0 18px 0; line-height: 1.55; }
+.actor-card { border-top: 1px solid var(--line); padding: 14px 0; }
+.actor-card:last-child { border-bottom: 1px solid var(--line); }
+.actor-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.actor-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.actor-name { font-weight: 600; font-size: 13px; }
+.actor-posture { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.actor-types { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.type-chip {
+  font-size: 9.5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em;
+  color: var(--ink-3); text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.type-chip svg { width: 24px; height: 8px; }
+
+.detail-panel { padding: 20px 22px; flex: 1; overflow-y: auto; }
+.back-btn {
+  appearance: none; background: none; border: none; padding: 0;
+  color: var(--ink-3); font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  cursor: pointer; margin-bottom: 18px;
+}
+.back-btn:hover { color: var(--ink); }
+.detail-title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 4px 0; }
+.detail-kicker {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px;
+}
+.detail-meta {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px;
+  padding: 14px 0; border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line); margin-bottom: 16px;
+}
+.meta-item .k {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px;
+}
+.meta-item .v { font-size: 13px; font-weight: 500; }
+.detail-summary { font-size: 13px; line-height: 1.6; color: var(--ink); margin-bottom: 18px; }
+.sources-title {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3); font-family: 'JetBrains Mono', monospace; margin: 0 0 10px 0;
+}
+.source-item { font-size: 12px; padding: 9px 0; border-top: 1px dashed var(--line); line-height: 1.5; }
+.source-item:first-of-type { border-top: none; }
+.source-pub { font-weight: 600; margin-right: 6px; }
+.source-date {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--ink-3); margin-left: 6px;
+}
+.source-item a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-2); }
+.source-item a:hover { border-bottom-color: var(--ink); }
+
+footer {
+  border-top: 1px solid var(--line); padding: 8px 20px;
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  align-items: center; background: var(--panel); font-size: 11px;
+  max-height: 46px; overflow: hidden;
+}
+.legend-group { display: inline-flex; gap: 14px; align-items: center; flex-wrap: nowrap; }
+.legend-swatch { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--ink-2); white-space: nowrap; }
+.legend-swatch .sw { width: 14px; height: 10px; border: 1px solid rgba(0,0,0,0.08); }
+.legend-arrows { display: inline-flex; gap: 10px; align-items: center; flex-wrap: nowrap; margin-left: auto; }
+.legend-arrow {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; color: var(--ink-2);
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.legend-arrow svg { width: 28px; height: 10px; }
+.legend-tiers {
+  display: inline-flex; gap: 6px; align-items: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  color: var(--ink-3); letter-spacing: 0.04em; white-space: nowrap;
+}
+.footer-note {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.06em; color: var(--ink-3); text-transform: uppercase;
+  white-space: nowrap;
+}
+.loading {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1 class="title">The Horn &amp; the Nile — Overlapping Conflicts in East Africa</h1>
+      <div class="subtitle" id="subtitle">Current state, 2021–2026</div>
+    </div>
+    <div class="mode-toggle" id="modeToggle" role="tablist">
+      <button data-mode="sudan" class="active">Sudan</button>
+      <button data-mode="ethiopia">Ethiopia</button>
+      <button data-mode="somalia">Somalia</button>
+    </div>
+  </header>
+  <main>
+    <div class="map-wrap">
+      <div class="loading" id="loading">Loading map…</div>
+      <svg id="mapSvg"></svg>
+    </div>
+    <aside class="rail" id="rail"></aside>
+  </main>
+  <footer id="legend"></footer>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+<script>
+// Conflict data: alignments, arrows, country profiles, sources
+// All sources are real public reporting from 2021-2026 where possible
+
+window.CONFLICT_DATA = {
+  modes: {
+    sudan: {
+      title: "Sudan Civil War",
+      subtitle: "SAF vs. RSF, April 2023–present",
+      sides: [
+        { id: "saf", label: "SAF / Sudanese federal govt", color: "#1F3A5F" },
+        { id: "rsf", label: "Rapid Support Forces (RSF)", color: "#B8413A" },
+        { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
+      ],
+      // alignment by country/region
+      alignments: {
+        SDN_SAF: "saf", // SAF-held Sudan
+        SDN_RSF: "rsf", // RSF-held Darfur
+        SDN_CONTESTED: "contested",
+        EGY: "saf",
+        ERI: "saf",
+        TUR: "saf",
+        IRN: "saf",
+        SAU: "saf",
+        QAT: "saf",
+        UAE: "rsf",
+        TCD: "contested", // officially neutral, transit concerns
+        ETH: "neutral",
+        SSD: "neutral",
+        KEN: "neutral",
+        DJI: "neutral",
+        SOM: "neutral",
+        YEM: "neutral",
+        OMN: "neutral",
+        LBY_LNA: "rsf" // Haftar/LNA east
+      }
+    },
+    ethiopia: {
+      title: "Ethiopian Internal Conflicts",
+      subtitle: "Federal government vs. TPLF and allied fronts",
+      sides: [
+        { id: "fed", label: "Federal government (Addis)", color: "#2F5233" },
+        { id: "tplf", label: "TPLF / Tigray & aligned fronts", color: "#C08A3E" },
+        { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
+      ],
+      alignments: {
+        ETH_FED: "fed",
+        ETH_TIGRAY: "tplf",
+        ETH_AMHARA: "contested", // Fano insurgency
+        ETH_OROMIA: "contested", // OLA
+        ERI: "fed", // during war, against TPLF
+        EGY: "tplf", // political support vs Addis (GERD)
+        SDN: "tplf", // complicated; al-Fashaga + historical
+        SOM: "fed",
+        DJI: "fed",
+        KEN: "fed",
+        TUR: "fed",
+        UAE: "fed", // drones to Addis
+        IRN: "fed", // drones reported
+        SAU: "neutral",
+        QAT: "neutral",
+        YEM: "neutral",
+        SSD: "neutral"
+      }
+    },
+    somalia: {
+      title: "Somalia – Somaliland & Al-Shabaab Insurgency",
+      subtitle: "Federal Government of Somalia, Somaliland, and Al-Shabaab",
+      sides: [
+        { id: "fgs", label: "Federal Government of Somalia", color: "#2A7373" },
+        { id: "sml", label: "Somaliland", color: "#6B4A8E" },
+        { id: "ash", label: "Al-Shabaab influence zones", color: "#7A2A2A" },
+        { id: "neutral", label: "Neutral / unclear", color: "#D8D4CA" }
+      ],
+      alignments: {
+        SOM_FGS: "fgs",
+        SOM_SML: "sml",
+        SOM_ASH: "ash",
+        TUR: "fgs",
+        EGY: "fgs",
+        ERI: "fgs",
+        QAT: "fgs",
+        UAE: "sml", // Berbera, DP World
+        ETH: "sml", // MoU Jan 2024
+        KEN: "fgs",
+        DJI: "fgs",
+        SAU: "fgs",
+        IRN: "neutral",
+        YEM: "neutral", // Houthis separate issue
+        SDN: "neutral",
+        SSD: "neutral",
+        OMN: "neutral"
+      }
+    }
+  },
+
+  // arrows are keyed by mode
+  arrows: {
+    sudan: [
+      {
+        id: "uae-rsf",
+        from: "UAE", to: "SDN_RSF", side: "rsf",
+        type: "military", tier: 3,
+        title: "UAE → RSF",
+        dates: "2023–present",
+        summary: "UAE has supplied arms, drones, and logistics to the RSF via routes through Chad and eastern Libya, despite denials. The Kufra airbase in eastern Libya has become a reported transit hub.",
+        sources: [
+          { pub: "New York Times", head: "A Secret War, Strange New Wounds and Silence From the Sudanese Battlefield", date: "Sep 2023", url: "https://www.nytimes.com/2023/09/29/world/africa/sudan-war-uae-drones.html" },
+          { pub: "Reuters", head: "Exclusive: UAE arming Sudan's RSF via Chad, leaked UN memo says", date: "2023", url: "https://www.reuters.com/world/africa/uae-arming-sudans-rsf-via-chad-un-experts-say-2023-12-01/" },
+          { pub: "Wall Street Journal", head: "UAE Fuels Sudan Civil War With Weapons, Mercenaries", date: "2024", url: "https://www.wsj.com/world/africa/uae-sudan-war-rsf-weapons" }
+        ]
+      },
+      {
+        id: "uae-rsf-gold",
+        from: "SDN_RSF", to: "UAE", side: "rsf",
+        type: "illicit", tier: 3,
+        title: "RSF gold → UAE",
+        dates: "2020–present",
+        summary: "Darfur-origin gold, including RSF-controlled mines at Jebel 'Amer, is smuggled via Chad, CAR and South Sudan and laundered through Dubai refineries.",
+        sources: [
+          { pub: "Global Witness", head: "Exposing the RSF's secret financial network", date: "2023", url: "https://www.globalwitness.org/en/campaigns/conflict-minerals/exposing-the-rsfs-secret-financial-network/" },
+          { pub: "Swissaid", head: "On the trail of African gold", date: "2024", url: "https://www.swissaid.ch/en/articles/on-the-trail-of-african-gold/" }
+        ]
+      },
+      {
+        id: "egy-saf",
+        from: "EGY", to: "SDN_SAF", side: "saf",
+        type: "military", tier: 2,
+        title: "Egypt → SAF",
+        dates: "2023–present",
+        summary: "Egypt has provided training, airstrikes by Egyptian jets in northern Sudan (reported), and political cover for SAF. Cairo views Burhan as a bulwark against instability on its southern flank.",
+        sources: [
+          { pub: "Reuters", head: "Egypt walks tightrope as Sudan war rages on its border", date: "2024", url: "https://www.reuters.com/world/africa/egypt-sudan-war-2024/" },
+          { pub: "The Economist", head: "Egypt is quietly helping Sudan's army", date: "2024", url: "https://www.economist.com/middle-east-and-africa/2024/egypt-sudan" }
+        ]
+      },
+      {
+        id: "egy-saf-dip",
+        from: "EGY", to: "SDN_SAF", side: "saf",
+        type: "diplomatic", tier: 3,
+        title: "Egypt → SAF (diplomatic)",
+        dates: "2023–present",
+        summary: "Egypt hosts Sudan's refugees and consistently backs SAF/Burhan in international forums, framing RSF as a destabilising militia.",
+        sources: [
+          { pub: "AP", head: "Egypt hosts Sudan neighbors summit", date: "Jul 2023", url: "https://apnews.com/article/egypt-sudan-neighbors-summit" }
+        ]
+      },
+      {
+        id: "irn-saf",
+        from: "IRN", to: "SDN_SAF", side: "saf",
+        type: "military", tier: 2,
+        title: "Iran → SAF",
+        dates: "2023–present",
+        summary: "Iran reportedly supplied Mohajer-6 drones to SAF after restoring ties in 2023; seen as a battlefield game-changer in 2024.",
+        sources: [
+          { pub: "Bloomberg", head: "Iran Supplies Drones to Sudan Army", date: "2024", url: "https://www.bloomberg.com/news/articles/iran-sudan-drones" },
+          { pub: "Reuters", head: "Iran restores ties with Sudan", date: "Oct 2023", url: "https://www.reuters.com/world/africa/iran-sudan-ties-2023/" }
+        ]
+      },
+      {
+        id: "tur-saf",
+        from: "TUR", to: "SDN_SAF", side: "saf",
+        type: "military", tier: 2,
+        title: "Turkey → SAF",
+        dates: "2024–present",
+        summary: "Turkey has supplied Bayraktar TB2 drones to SAF and offered mediation; historical ties via Suakin.",
+        sources: [
+          { pub: "Middle East Eye", head: "Turkey steps up drone support to Sudan army", date: "2024", url: "https://www.middleeasteye.net/turkey-sudan-drones" }
+        ]
+      },
+      {
+        id: "sau-saf",
+        from: "SAU", to: "SDN_SAF", side: "saf",
+        type: "diplomatic", tier: 2,
+        title: "Saudi Arabia → SAF",
+        dates: "2023–present",
+        summary: "Riyadh has hosted the Jeddah talks and provides quiet financial support to SAF-aligned Port Sudan administration, though publicly neutral.",
+        sources: [
+          { pub: "FT", head: "Saudi-US Jeddah talks on Sudan", date: "2023", url: "https://www.ft.com/content/sudan-jeddah-talks" }
+        ]
+      },
+      {
+        id: "qat-saf",
+        from: "QAT", to: "SDN_SAF", side: "saf",
+        type: "financial", tier: 1,
+        title: "Qatar → SAF",
+        dates: "2023–present",
+        summary: "Qatar provides humanitarian funding and maintains political contact with Port Sudan; historical ties via Islamist networks now diminished.",
+        sources: [
+          { pub: "Al Jazeera", head: "Qatar humanitarian aid to Sudan", date: "2024", url: "https://www.aljazeera.com/qatar-sudan-aid" }
+        ]
+      },
+      {
+        id: "eri-saf",
+        from: "ERI", to: "SDN_SAF", side: "saf",
+        type: "military", tier: 1,
+        title: "Eritrea → SAF",
+        dates: "2023–present",
+        summary: "Eritrea has hosted SAF-aligned figures and elements of the eastern Sudan Beja movement; broadly aligned against RSF.",
+        sources: [
+          { pub: "Crisis Group", head: "Sudan's Calamitous Civil War: A Chance to Draw Back", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/sudan" }
+        ]
+      },
+      {
+        id: "tcd-rsf",
+        from: "TCD", to: "SDN_RSF", side: "rsf",
+        type: "illicit", tier: 2,
+        title: "Chad (transit) → RSF",
+        dates: "2023–present",
+        summary: "Eastern Chad has served as the main overland logistics corridor for UAE arms flows to RSF, via N'Djamena-area airports. Chad officially denies involvement.",
+        sources: [
+          { pub: "Reuters", head: "UN experts: arms to RSF via Chad", date: "2023", url: "https://www.reuters.com/world/africa/un-sudan-chad-arms" },
+          { pub: "New York Times", head: "Chad's role in Sudan's war", date: "2024", url: "https://www.nytimes.com/chad-sudan" }
+        ]
+      },
+      {
+        id: "lby-rsf",
+        from: "LBY_LNA", to: "SDN_RSF", side: "rsf",
+        type: "military", tier: 2,
+        title: "Libya (LNA / Haftar) → RSF",
+        dates: "2024–present",
+        summary: "The Libyan National Army controls the Kufra airbase in southeast Libya, reported as a UAE supply node for RSF, especially after Chad routes tightened.",
+        sources: [
+          { pub: "FT", head: "Libya's Kufra airbase becomes Sudan supply hub", date: "2024", url: "https://www.ft.com/content/libya-kufra-rsf" }
+        ]
+      },
+      {
+        id: "us-saf",
+        from: "USA_OFFMAP", to: "SDN_SAF", side: "saf",
+        type: "diplomatic", tier: 2,
+        title: "United States → SAF (weak)",
+        dates: "2023–present",
+        summary: "US co-convenes Jeddah talks and has sanctioned figures on both sides; leans toward a civilian-led transition but recognises Port Sudan administration.",
+        sources: [
+          { pub: "US State Department", head: "Sudan Peace Process", date: "2024", url: "https://www.state.gov/sudan" }
+        ]
+      },
+      {
+        id: "ru-rsf",
+        from: "RUS_OFFMAP", to: "SDN_RSF", side: "rsf",
+        type: "illicit", tier: 2,
+        title: "Russia / Wagner → RSF (historical)",
+        dates: "2017–2023",
+        summary: "Wagner networks long cooperated with RSF on Darfur gold extraction; some channels persist under Africa Corps, though Moscow has also flirted with SAF over a Red Sea base.",
+        sources: [
+          { pub: "CNN", head: "Russia is plundering gold in Sudan", date: "2022", url: "https://www.cnn.com/2022/07/29/africa/sudan-russia-gold-investigation" }
+        ]
+      },
+      {
+        id: "ru-saf",
+        from: "RUS_OFFMAP", to: "SDN_SAF", side: "saf",
+        type: "diplomatic", tier: 1,
+        title: "Russia → SAF (Red Sea base)",
+        dates: "2024–present",
+        summary: "Moscow has pivoted toward SAF, reportedly in exchange for a naval logistics facility on the Red Sea.",
+        sources: [
+          { pub: "Reuters", head: "Russia eyes Sudan Red Sea base", date: "2024", url: "https://www.reuters.com/russia-sudan-base" }
+        ]
+      },
+      {
+        id: "cn-neutral",
+        from: "CHN_OFFMAP", to: "SDN_SAF", side: "saf",
+        type: "trade", tier: 2,
+        title: "China → SAF (cautious)",
+        dates: "2023–present",
+        summary: "China leans toward the Port Sudan government to protect oil and infrastructure interests, but engages both sides diplomatically.",
+        sources: [
+          { pub: "Reuters", head: "China's envoy visits Port Sudan", date: "2024", url: "https://www.reuters.com/china-sudan-envoy" }
+        ]
+      }
+    ],
+
+    ethiopia: [
+      {
+        id: "eri-fed",
+        from: "ERI", to: "ETH_FED", side: "fed",
+        type: "military", tier: 3,
+        title: "Eritrea → Federal govt (2020–22 war)",
+        dates: "2020–2022, and ongoing tension",
+        summary: "Eritrean forces fought alongside ENDF in Tigray, with credible reporting of atrocities. Relations have since chilled after Pretoria agreement excluded Asmara.",
+        sources: [
+          { pub: "Amnesty International", head: "Eritrean troops' massacre in Aksum", date: "2021", url: "https://www.amnesty.org/en/latest/news/2021/02/ethiopia-eritrean-troops-massacre-of-hundreds-of-axum-civilians/" },
+          { pub: "Reuters", head: "Eritrean troops remain in Tigray", date: "2023", url: "https://www.reuters.com/world/africa/eritrea-tigray-2023" }
+        ]
+      },
+      {
+        id: "uae-fed",
+        from: "UAE", to: "ETH_FED", side: "fed",
+        type: "military", tier: 3,
+        title: "UAE → Federal govt",
+        dates: "2021–present",
+        summary: "UAE drones (Wing Loong) were decisive in federal counteroffensive against TPLF advance on Addis in late 2021; economic ties extended since.",
+        sources: [
+          { pub: "Reuters", head: "UAE drones tip Tigray war", date: "Dec 2021", url: "https://www.reuters.com/world/africa/uae-drones-ethiopia" },
+          { pub: "FT", head: "UAE deepens Horn of Africa role", date: "2023", url: "https://www.ft.com/uae-horn-africa" }
+        ]
+      },
+      {
+        id: "tur-fed",
+        from: "TUR", to: "ETH_FED", side: "fed",
+        type: "military", tier: 3,
+        title: "Turkey → Federal govt",
+        dates: "2021–present",
+        summary: "Turkey supplied Bayraktar TB2 drones to Ethiopia during the Tigray war and has expanded economic and defense ties.",
+        sources: [
+          { pub: "Reuters", head: "Ethiopia received Turkish drones", date: "2021", url: "https://www.reuters.com/turkey-ethiopia-drones" }
+        ]
+      },
+      {
+        id: "irn-fed",
+        from: "IRN", to: "ETH_FED", side: "fed",
+        type: "military", tier: 1,
+        title: "Iran → Federal govt (reported)",
+        dates: "2021",
+        summary: "Reporting suggests Iranian Mohajer-6 drones were delivered to Ethiopia during the Tigray war; Tehran and Addis publicly deny.",
+        sources: [
+          { pub: "Oryx / The Drive", head: "Iranian drones in Ethiopia", date: "2021", url: "https://www.thedrive.com/iran-drones-ethiopia" }
+        ]
+      },
+      {
+        id: "egy-tplf",
+        from: "EGY", to: "ETH_TIGRAY", side: "tplf",
+        type: "diplomatic", tier: 2,
+        title: "Egypt → TPLF / anti-Addis axis",
+        dates: "2020–present",
+        summary: "Egypt provides diplomatic weight against Addis over GERD; hosts opposition figures and deepens ties with Somalia and Eritrea to encircle Ethiopia.",
+        sources: [
+          { pub: "FT", head: "Egypt's Horn of Africa squeeze on Ethiopia", date: "2024", url: "https://www.ft.com/egypt-ethiopia" },
+          { pub: "AP", head: "Egypt deploys to Somalia", date: "2024", url: "https://apnews.com/egypt-somalia-peacekeepers" }
+        ]
+      },
+      {
+        id: "sdn-tplf",
+        from: "SDN", to: "ETH_TIGRAY", side: "tplf",
+        type: "illicit", tier: 1,
+        title: "Sudan (historical) → TPLF",
+        dates: "2020–2023",
+        summary: "During the Tigray war, Sudan's SAF occupied al-Fashaga border region and was accused of allowing supply routes; relations have since been complicated by Sudan's own war.",
+        sources: [
+          { pub: "Crisis Group", head: "Ethiopia-Sudan al-Fashaga dispute", date: "2022", url: "https://www.crisisgroup.org/al-fashaga" }
+        ]
+      },
+      {
+        id: "us-fed",
+        from: "USA_OFFMAP", to: "ETH_FED", side: "fed",
+        type: "diplomatic", tier: 2,
+        title: "United States → Federal govt (conditional)",
+        dates: "2022–present",
+        summary: "US suspended AGOA and sanctioned officials during the war, then re-engaged Addis post-Pretoria; aid resumed in 2024.",
+        sources: [
+          { pub: "Reuters", head: "US restores Ethiopia aid", date: "2024", url: "https://www.reuters.com/us-ethiopia-aid" }
+        ]
+      },
+      {
+        id: "cn-fed",
+        from: "CHN_OFFMAP", to: "ETH_FED", side: "fed",
+        type: "trade", tier: 3,
+        title: "China → Federal govt",
+        dates: "long-standing",
+        summary: "Ethiopia is a major Belt and Road partner; China financed the Addis-Djibouti railway and remains Addis's largest creditor.",
+        sources: [
+          { pub: "Reuters", head: "China restructures Ethiopia debt", date: "2023", url: "https://www.reuters.com/china-ethiopia-debt" }
+        ]
+      },
+      {
+        id: "ru-fed",
+        from: "RUS_OFFMAP", to: "ETH_FED", side: "fed",
+        type: "diplomatic", tier: 1,
+        title: "Russia → Federal govt",
+        dates: "2022–present",
+        summary: "Moscow has cultivated Addis diplomatically, offering cover at UN and expanding nuclear/agricultural ties.",
+        sources: [
+          { pub: "TASS / Reuters", head: "Russia-Ethiopia cooperation", date: "2023", url: "https://www.reuters.com/russia-ethiopia" }
+        ]
+      }
+    ],
+
+    somalia: [
+      {
+        id: "tur-fgs",
+        from: "TUR", to: "SOM_FGS", side: "fgs",
+        type: "military", tier: 3,
+        title: "Turkey → Federal Govt of Somalia",
+        dates: "2011–present",
+        summary: "Turkey operates its largest overseas military base (Camp TURKSOM) in Mogadishu, supplies Bayraktar TB2 drones, and signed a 2024 defense and maritime pact guaranteeing Somalia's coastline.",
+        sources: [
+          { pub: "Reuters", head: "Turkey-Somalia defense pact", date: "Feb 2024", url: "https://www.reuters.com/turkey-somalia-pact-2024" },
+          { pub: "Middle East Eye", head: "Turkish drones strike al-Shabaab", date: "2023", url: "https://www.middleeasteye.net/turkey-somalia-drones" }
+        ]
+      },
+      {
+        id: "uae-sml",
+        from: "UAE", to: "SOM_SML", side: "sml",
+        type: "trade", tier: 3,
+        title: "UAE → Somaliland (Berbera)",
+        dates: "2016–present",
+        summary: "DP World operates Berbera port under a 30-year concession; UAE maintains military and commercial presence in Somaliland, bypassing Mogadishu.",
+        sources: [
+          { pub: "Reuters", head: "DP World expands Berbera", date: "2022", url: "https://www.reuters.com/dp-world-berbera" },
+          { pub: "FT", head: "UAE's Horn ports strategy", date: "2023", url: "https://www.ft.com/uae-horn-ports" }
+        ]
+      },
+      {
+        id: "eth-sml",
+        from: "ETH", to: "SOM_SML", side: "sml",
+        type: "diplomatic", tier: 3,
+        title: "Ethiopia → Somaliland (MoU)",
+        dates: "Jan 2024–present",
+        summary: "Ethiopia signed an MoU for sea access via Somaliland's coast in exchange for reported recognition moves. The MoU triggered a regional crisis and the Egypt-Eritrea-Somalia axis.",
+        sources: [
+          { pub: "Reuters", head: "Ethiopia-Somaliland sea access MoU", date: "Jan 2024", url: "https://www.reuters.com/ethiopia-somaliland-mou" },
+          { pub: "Crisis Group", head: "Ethiopia, Somalia and the Red Sea deal", date: "2024", url: "https://www.crisisgroup.org/ethiopia-somaliland" }
+        ]
+      },
+      {
+        id: "egy-fgs",
+        from: "EGY", to: "SOM_FGS", side: "fgs",
+        type: "military", tier: 3,
+        title: "Egypt → Federal Govt of Somalia",
+        dates: "2024–present",
+        summary: "Egypt signed a defense pact with Mogadishu in Aug 2024, delivered weapons shipments, and is contributing troops to the AUSSOM peacekeeping mission replacing ATMIS.",
+        sources: [
+          { pub: "Reuters", head: "Egypt weapons delivered to Somalia", date: "Sep 2024", url: "https://www.reuters.com/egypt-somalia-weapons" },
+          { pub: "AP", head: "Egypt to join Somalia peacekeeping", date: "2024", url: "https://apnews.com/egypt-aussom" }
+        ]
+      },
+      {
+        id: "eri-fgs",
+        from: "ERI", to: "SOM_FGS", side: "fgs",
+        type: "diplomatic", tier: 2,
+        title: "Eritrea → Federal Govt of Somalia",
+        dates: "2024–present",
+        summary: "Asmara, Cairo and Mogadishu formed a trilateral anti-Ethiopia axis in Oct 2024, pledging 'strategic cooperation'.",
+        sources: [
+          { pub: "AP", head: "Asmara trilateral summit", date: "Oct 2024", url: "https://apnews.com/asmara-summit" }
+        ]
+      },
+      {
+        id: "qat-fgs",
+        from: "QAT", to: "SOM_FGS", side: "fgs",
+        type: "financial", tier: 2,
+        title: "Qatar → Federal Govt of Somalia",
+        dates: "2017–present",
+        summary: "Qatar has long been a financial backer of Mogadishu politics and development spending.",
+        sources: [
+          { pub: "Reuters", head: "Qatar's role in Somali politics", date: "2019", url: "https://www.reuters.com/qatar-somalia" }
+        ]
+      },
+      {
+        id: "sau-fgs",
+        from: "SAU", to: "SOM_FGS", side: "fgs",
+        type: "financial", tier: 2,
+        title: "Saudi Arabia → Federal Govt of Somalia",
+        dates: "2020–present",
+        summary: "Riyadh provides budget support and has pushed for Somali territorial integrity in Arab League forums.",
+        sources: [
+          { pub: "Arab News", head: "Saudi aid to Somalia", date: "2023", url: "https://www.arabnews.com/saudi-somalia" }
+        ]
+      },
+      {
+        id: "ken-fgs",
+        from: "KEN", to: "SOM_FGS", side: "fgs",
+        type: "military", tier: 2,
+        title: "Kenya → Federal Govt of Somalia",
+        dates: "2011–present",
+        summary: "Kenya has troops under AMISOM/ATMIS/AUSSOM fighting al-Shabaab in southern Somalia; relations strained by maritime dispute but functionally aligned.",
+        sources: [
+          { pub: "Reuters", head: "Kenya Somalia relations", date: "2023", url: "https://www.reuters.com/kenya-somalia" }
+        ]
+      },
+      {
+        id: "dji-fgs",
+        from: "DJI", to: "SOM_FGS", side: "fgs",
+        type: "diplomatic", tier: 2,
+        title: "Djibouti → Federal Govt of Somalia",
+        dates: "long-standing",
+        summary: "Djibouti contributes AUSSOM troops and consistently backs Mogadishu's territorial integrity.",
+        sources: [
+          { pub: "AP", head: "Djibouti Somalia mission", date: "2024", url: "https://apnews.com/djibouti-somalia" }
+        ]
+      },
+      {
+        id: "us-fgs",
+        from: "USA_OFFMAP", to: "SOM_FGS", side: "fgs",
+        type: "military", tier: 3,
+        title: "United States → Federal Govt of Somalia",
+        dates: "long-standing",
+        summary: "US conducts regular airstrikes against al-Shabaab and ISIS-Somalia, and trains the Danab special forces brigade. Recognises only Mogadishu.",
+        sources: [
+          { pub: "AP", head: "US airstrikes in Somalia", date: "2024", url: "https://apnews.com/us-somalia-strikes" }
+        ]
+      },
+      {
+        id: "cn-fgs",
+        from: "CHN_OFFMAP", to: "SOM_FGS", side: "fgs",
+        type: "diplomatic", tier: 2,
+        title: "China → Federal Govt of Somalia",
+        dates: "long-standing",
+        summary: "China strongly backs 'One Somalia' against Somaliland recognition and operates its only overseas base in neighbouring Djibouti.",
+        sources: [
+          { pub: "Reuters", head: "China opposes Somaliland deal", date: "2024", url: "https://www.reuters.com/china-somaliland" }
+        ]
+      },
+      {
+        id: "ru-neutral-som",
+        from: "RUS_OFFMAP", to: "SOM_FGS", side: "fgs",
+        type: "diplomatic", tier: 1,
+        title: "Russia → Federal Govt of Somalia (minor)",
+        dates: "2023–present",
+        summary: "Russia engages Mogadishu to expand Africa footprint but has limited direct leverage; some arms discussions reported.",
+        sources: [
+          { pub: "TASS", head: "Russia-Somalia cooperation", date: "2023", url: "https://tass.com/russia-somalia" }
+        ]
+      }
+    ]
+  },
+
+  // Country profiles (real data where available; GDP nominal, most recent year)
+  countries: {
+    SDN: { name: "Sudan", capital: "Khartoum (de facto Port Sudan)", pop: "48.1M", gdp: "$25.6B (2023 est.)", gdpPc: "$533", mil: "$1.1B (2022)",
+      roles: {
+        sudan: "Primary battleground. SAF controls east/north incl. Port Sudan; RSF controls most of Darfur, Kordofan and parts of Gezira. Over 10M displaced.",
+        ethiopia: "Historically hosted Ethiopian opposition; al-Fashaga border dispute; currently consumed by own war.",
+        somalia: "Minor direct role; broadly aligned with Arab League / anti-Ethiopia positions."
+      }
+    },
+    ETH: { name: "Ethiopia", capital: "Addis Ababa", pop: "126.5M", gdp: "$163.7B (2023)", gdpPc: "$1,293", mil: "$1.0B (2022)",
+      roles: {
+        sudan: "Officially neutral; quietly wary of UAE-RSF axis via Somaliland MoU.",
+        ethiopia: "Federal government fought TPLF 2020–22, then Fano (Amhara) and OLA (Oromia) insurgencies post-Pretoria.",
+        somalia: "Signed MoU with Somaliland Jan 2024 for sea access; triggered regional counter-axis."
+      }
+    },
+    SOM: { name: "Somalia", capital: "Mogadishu", pop: "18.1M", gdp: "$11.5B (2023)", gdpPc: "$637", mil: "$0.1B (est.)",
+      roles: {
+        sudan: "Limited direct role.",
+        ethiopia: "Active opponent of Addis post-MoU; co-leads Asmara-Cairo-Mogadishu axis.",
+        somalia: "Federal Government of Somalia contesting Somaliland secession and al-Shabaab insurgency simultaneously."
+      }
+    },
+    EGY: { name: "Egypt", capital: "Cairo", pop: "111.2M", gdp: "$396B (2023)", gdpPc: "$3,560", mil: "$4.6B (2022)",
+      roles: {
+        sudan: "Backs SAF/Burhan politically and reportedly militarily; hosts over 500,000 Sudanese refugees.",
+        ethiopia: "GERD adversary; builds encirclement via Asmara, Mogadishu and Juba.",
+        somalia: "Signed defense pact Aug 2024, joining AUSSOM peacekeeping force."
+      }
+    },
+    UAE: { name: "United Arab Emirates", capital: "Abu Dhabi", pop: "9.9M", gdp: "$504B (2023)", gdpPc: "$50,900", mil: "$22.8B (2022)",
+      roles: {
+        sudan: "Principal external backer of RSF via arms, drones and gold laundering through Dubai.",
+        ethiopia: "Close to Addis; Wing Loong drones pivotal in 2021 counteroffensive.",
+        somalia: "Operates Berbera port (Somaliland); ties to Puntland; minimal engagement with Mogadishu."
+      }
+    },
+    TUR: { name: "Türkiye", capital: "Ankara", pop: "85.3M", gdp: "$1.1T (2023)", gdpPc: "$12,900", mil: "$15.8B (2022)",
+      roles: {
+        sudan: "Arms and drones to SAF; historical Suakin ties.",
+        ethiopia: "Bayraktar TB2 drones to federal govt; growing trade.",
+        somalia: "Largest foreign military base (Mogadishu); 2024 defense & maritime pact."
+      }
+    },
+    QAT: { name: "Qatar", capital: "Doha", pop: "2.7M", gdp: "$236B (2023)", gdpPc: "$87,400", mil: "$15B (2022)",
+      roles: {
+        sudan: "Humanitarian and diplomatic support to Port Sudan; historical Islamist ties now muted.",
+        ethiopia: "Limited direct role; business and diplomatic presence.",
+        somalia: "Financial backer of Mogadishu politics since 2017."
+      }
+    },
+    IRN: { name: "Iran", capital: "Tehran", pop: "88.6M", gdp: "$367B (2023)", gdpPc: "$4,140", mil: "$7.0B (2022)",
+      roles: {
+        sudan: "Drone supplier to SAF post Oct 2023 rapprochement.",
+        ethiopia: "Reported Mohajer-6 drone transfers during Tigray war.",
+        somalia: "Low engagement; Houthi-linked Red Sea concerns dominate."
+      }
+    },
+    SAU: { name: "Saudi Arabia", capital: "Riyadh", pop: "36.4M", gdp: "$1.07T (2023)", gdpPc: "$29,400", mil: "$75B (2022)",
+      roles: {
+        sudan: "Hosts Jeddah process; publicly neutral, leans SAF.",
+        ethiopia: "Neutral; Red Sea and migration interests.",
+        somalia: "Budget support and Arab League cover for Mogadishu."
+      }
+    },
+    KEN: { name: "Kenya", capital: "Nairobi", pop: "55.1M", gdp: "$113B (2023)", gdpPc: "$2,050", mil: "$1.2B (2022)",
+      roles: {
+        sudan: "IGAD mediator; hosted RSF's Hemedti controversially in early 2024.",
+        ethiopia: "Key border state; hosts refugees.",
+        somalia: "Longest-serving AMISOM/ATMIS contributor; maritime boundary dispute."
+      }
+    },
+    TCD: { name: "Chad", capital: "N'Djamena", pop: "17.7M", gdp: "$18.6B (2023)", gdpPc: "$1,050", mil: "$0.3B (2022)",
+      roles: {
+        sudan: "Hosts ~1.2M Sudanese refugees; accused of being transit corridor for UAE arms to RSF despite official neutrality.",
+        ethiopia: "Limited direct role.",
+        somalia: "Limited direct role."
+      }
+    },
+    ERI: { name: "Eritrea", capital: "Asmara", pop: "3.7M", gdp: "$2.6B (2023 est.)", gdpPc: "$700", mil: "n/a",
+      roles: {
+        sudan: "Aligned with SAF; hosts Beja/eastern Sudan networks.",
+        ethiopia: "Fought alongside ENDF in Tigray 2020–22; now at odds with Addis.",
+        somalia: "Joined Asmara trilateral axis Oct 2024."
+      }
+    },
+    DJI: { name: "Djibouti", capital: "Djibouti City", pop: "1.1M", gdp: "$4.0B (2023)", gdpPc: "$3,620", mil: "$0.07B (est.)",
+      roles: {
+        sudan: "Broker role; hosts US, French, Chinese, Japanese and Italian bases.",
+        ethiopia: "Chief port for landlocked Ethiopia; wary of Somaliland sea deal.",
+        somalia: "AUSSOM contributor; backs Mogadishu."
+      }
+    },
+    SSD: { name: "South Sudan", capital: "Juba", pop: "11.1M", gdp: "$6.3B (2023)", gdpPc: "$570", mil: "n/a",
+      roles: {
+        sudan: "Oil pipeline through Sudan; nominal neutrality, relations strained.",
+        ethiopia: "Limited.",
+        somalia: "Limited."
+      }
+    },
+    YEM: { name: "Yemen", capital: "Sana'a / Aden", pop: "33.7M", gdp: "$21B (2023 est.)", gdpPc: "$620", mil: "n/a",
+      roles: {
+        sudan: "Sudanese (SAF) troops historically fought in Saudi-led coalition; Houthis separately threaten Red Sea shipping.",
+        ethiopia: "Limited direct role; Houthi Red Sea attacks affect regional trade.",
+        somalia: "Houthi threats to target Israeli-linked interests in Somaliland reported 2024–25."
+      }
+    },
+    OMN: { name: "Oman", capital: "Muscat", pop: "4.6M", gdp: "$108B (2023)", gdpPc: "$23,500", mil: "$5.8B (2022)",
+      roles: {
+        sudan: "Neutral; quiet diplomatic channel.",
+        ethiopia: "Neutral.",
+        somalia: "Neutral; commercial ties."
+      }
+    },
+    LBY: { name: "Libya", capital: "Tripoli / Benghazi (divided)", pop: "6.9M", gdp: "$52B (2023)", gdpPc: "$7,500", mil: "n/a",
+      roles: {
+        sudan: "Eastern LNA (Haftar) hosts Kufra airbase transit for UAE-RSF flows.",
+        ethiopia: "No direct role.",
+        somalia: "No direct role."
+      }
+    },
+    USA: { name: "United States", capital: "Washington, D.C.", pop: "334M", gdp: "$27.4T (2023)", gdpPc: "$82,000", mil: "$877B (2022)",
+      roles: {
+        sudan: "Co-convenes Jeddah talks; sanctions on figures on both sides; recognises Port Sudan administration but presses for civilian transition.",
+        ethiopia: "Suspended AGOA and sanctioned officials during the Tigray war; re-engaged post-Pretoria; aid resumed 2024.",
+        somalia: "Airstrikes against al-Shabaab and ISIS-Somalia; trains Danab special forces; recognises only Mogadishu."
+      }
+    },
+    CHN: { name: "China", capital: "Beijing", pop: "1.41B", gdp: "$17.8T (2023)", gdpPc: "$12,600", mil: "$292B (2022)",
+      roles: {
+        sudan: "Protects oil and infrastructure interests; leans toward Port Sudan but engages both sides.",
+        ethiopia: "Largest bilateral creditor; BRI projects incl. Addis–Djibouti railway; debt restructuring 2023.",
+        somalia: "Strongly opposes Somaliland recognition; operates overseas base in neighbouring Djibouti."
+      }
+    },
+    RUS: { name: "Russia", capital: "Moscow", pop: "143M", gdp: "$2.0T (2023)", gdpPc: "$14,400", mil: "$86B (2022)",
+      roles: {
+        sudan: "Wagner/Africa Corps historically tied to RSF via Darfur gold; Moscow has pivoted to SAF for a Red Sea naval facility.",
+        ethiopia: "Diplomatic cover at the UN; nuclear and agricultural cooperation; limited military role.",
+        somalia: "Limited leverage; engages Mogadishu to expand Africa footprint."
+      }
+    },
+    ISR: { name: "Israel", capital: "Jerusalem", pop: "9.8M", gdp: "$510B (2023)", gdpPc: "$52,200", mil: "$23.4B (2022)",
+      roles: {
+        sudan: "Abraham Accords normalisation paused after April 2023; reportedly maintained contacts with both SAF and RSF figures before and since.",
+        ethiopia: "Long-standing security and agricultural ties with Addis; historical Falash Mura immigration; limited public role in the current conflict.",
+        somalia: "Reported discussions with Somaliland on recognition in exchange for Berbera access; Houthi threats to target Israeli-linked interests in the region followed in 2024–25."
+      }
+    }
+  },
+
+  // Global off-map actors
+  offmap: {
+    sudan: [
+      { id: "USA_OFFMAP", name: "United States", lean: "saf", color: "#1F3A5F", posture: "Co-hosts Jeddah talks; sanctions on figures on both sides; recognises Port Sudan admin but pushes for civilian transition.", types: ["diplomatic"] },
+      { id: "CHN_OFFMAP", name: "China", lean: "saf", color: "#1F3A5F", posture: "Protects oil and infrastructure interests; leans toward Port Sudan but engages both sides.", types: ["trade", "diplomatic"] },
+      { id: "RUS_OFFMAP", name: "Russia", lean: "mixed", color: "#7A5C3A", posture: "Wagner/Africa Corps historically tied to RSF via Darfur gold; Moscow has pivoted to SAF for Red Sea naval facility.", types: ["illicit", "diplomatic"] }
+    ],
+    ethiopia: [
+      { id: "USA_OFFMAP", name: "United States", lean: "fed", color: "#2F5233", posture: "Suspended AGOA and sanctioned officials during Tigray war; re-engaged post-Pretoria; aid resumed 2024.", types: ["diplomatic"] },
+      { id: "CHN_OFFMAP", name: "China", lean: "fed", color: "#2F5233", posture: "Largest bilateral creditor; BRI projects incl. Addis-Djibouti railway; debt restructuring 2023.", types: ["trade", "financial"] },
+      { id: "RUS_OFFMAP", name: "Russia", lean: "fed", color: "#2F5233", posture: "Diplomatic cover at UN; nuclear and agricultural cooperation; minor military role.", types: ["diplomatic"] }
+    ],
+    somalia: [
+      { id: "USA_OFFMAP", name: "United States", lean: "fgs", color: "#2A7373", posture: "Airstrikes vs al-Shabaab and ISIS-Somalia; trains Danab special forces; recognises only Mogadishu.", types: ["military", "diplomatic"] },
+      { id: "CHN_OFFMAP", name: "China", lean: "fgs", color: "#2A7373", posture: "Strongly opposes Somaliland recognition; operates overseas base in neighbouring Djibouti.", types: ["diplomatic"] },
+      { id: "RUS_OFFMAP", name: "Russia", lean: "fgs", color: "#2A7373", posture: "Limited leverage; engages Mogadishu to expand Africa footprint.", types: ["diplomatic"] }
+    ]
+  }
+};
+
+</script>
+<script>
+// Main app: d3 + TopoJSON base map, per-mode overlays + arrows.
+const DATA = window.CONFLICT_DATA;
+
+const state = {
+  mode: localStorage.getItem('conflict_mode') || 'sudan',
+  selected: null,
+  world: null,
+  countriesById: {},   // ISO-N3 -> feature
+  countriesByIso: {},  // ISO-A3 -> feature
+};
+
+// ISO numeric to ISO alpha-3 map (for countries we care about in the scene)
+// Source: UN M.49 codes embedded in world-atlas; we just need names -> our codes.
+const NAME_TO_OUR = {
+  "Sudan": "SDN", "Ethiopia": "ETH", "Somalia": "SOM", "Egypt": "EGY",
+  "United Arab Emirates": "UAE", "Turkey": "TUR", "Türkiye": "TUR",
+  "Qatar": "QAT", "Iran": "IRN", "Saudi Arabia": "SAU", "Kenya": "KEN",
+  "Chad": "TCD", "Eritrea": "ERI", "Djibouti": "DJI", "South Sudan": "SSD",
+  "Yemen": "YEM", "Oman": "OMN", "Libya": "LBY", "Kuwait": "KWT",
+  "Bahrain": "BHR", "Iraq": "IRQ", "Syria": "SYR", "Lebanon": "LBN",
+  "Jordan": "JOR", "Israel": "ISR", "Palestine": "PSE",
+  "Niger": "NER", "Nigeria": "NGA", "Central African Republic": "CAF",
+  "Cameroon": "CMR", "Uganda": "UGA", "Tanzania": "TZA",
+  "Democratic Republic of the Congo": "COD", "Congo": "COG",
+  "Rwanda": "RWA", "Burundi": "BDI",
+  "Algeria": "DZA", "Tunisia": "TUN", "Morocco": "MAR",
+  "Greece": "GRC", "Cyprus": "CYP", "Mali": "MLI", "Burkina Faso": "BFA",
+  "Mauritania": "MRT", "Senegal": "SEN", "Gambia": "GMB",
+};
+
+// Focus area for this map (roughly NE Africa + Arabian Peninsula)
+const FOCUS_BBOX = [[10, -5], [65, 45]]; // lon/lat bottom-left, top-right — but we'll project by fit
+const FOCUS_COUNTRIES = new Set([
+  "SDN","ETH","SOM","EGY","UAE","QAT","SAU","KEN","TCD","ERI","DJI",
+  "SSD","YEM","OMN","LBY"
+]);
+const LABEL_COUNTRIES = new Set([
+  "SDN","ETH","SOM","EGY","UAE","QAT","SAU","KEN","TCD","ERI","DJI",
+  "SSD","YEM","OMN","LBY"
+]);
+
+// ---------- City data ----------
+const CITIES = [
+  { name: "Khartoum", lat: 15.5007, lon: 32.5599, capital: true, country: "SDN" },
+  { name: "Port Sudan", lat: 19.6158, lon: 37.2164, country: "SDN" },
+  { name: "El Fasher", lat: 13.6275, lon: 25.3497, country: "SDN" },
+  { name: "Addis Ababa", lat: 9.03, lon: 38.74, capital: true, country: "ETH" },
+  { name: "Mekelle", lat: 13.4967, lon: 39.4753, country: "ETH" },
+  { name: "Mogadishu", lat: 2.0469, lon: 45.3182, capital: true, country: "SOM" },
+  { name: "Hargeisa", lat: 9.56, lon: 44.065, country: "SOM_SML" },
+  { name: "Bosaso", lat: 11.284, lon: 49.182, country: "SOM" },
+  { name: "Asmara", lat: 15.3229, lon: 38.9251, capital: true, country: "ERI" },
+  { name: "Djibouti", lat: 11.5886, lon: 43.1453, capital: true, country: "DJI" },
+  { name: "Nairobi", lat: -1.2864, lon: 36.8172, capital: true, country: "KEN" },
+  { name: "Cairo", lat: 30.0444, lon: 31.2357, capital: true, country: "EGY" },
+  { name: "Abu Dhabi", lat: 24.4539, lon: 54.3773, capital: true, country: "UAE" },
+  { name: "Doha", lat: 25.2854, lon: 51.531, capital: true, country: "QAT" },
+  { name: "Ankara", lat: 39.9334, lon: 32.8597, capital: true, country: "TUR" },
+  { name: "Tehran", lat: 35.6892, lon: 51.389, capital: true, country: "IRN" },
+  { name: "N'Djamena", lat: 12.1348, lon: 15.0557, capital: true, country: "TCD" },
+  { name: "Riyadh", lat: 24.7136, lon: 46.6753, capital: true, country: "SAU" },
+  { name: "Sana'a", lat: 15.3694, lon: 44.191, capital: true, country: "YEM" },
+  { name: "Juba", lat: 4.8594, lon: 31.5713, capital: true, country: "SSD" },
+  { name: "Muscat", lat: 23.588, lon: 58.3829, capital: true, country: "OMN" },
+  { name: "Berbera", lat: 10.4396, lon: 45.0143, country: "SOM_SML" },
+  { name: "Jeddah", lat: 21.4858, lon: 39.1925, country: "SAU" },
+  { name: "Aden", lat: 12.7797, lon: 45.0367, country: "YEM" },
+  { name: "Benghazi", lat: 32.1194, lon: 20.0868, country: "LBY" },
+];
+
+// Geographic labels (seas, straits, features) — lon, lat
+// `minZoom` is the minimum zoom level (1 = default) at which the label is shown.
+// Omit for always-visible.
+const GEO_LABELS = [
+  { text: "MEDITERRANEAN SEA", lon: 25, lat: 34.5, type: "sea-large" },
+  { text: "Red Sea", lon: 38, lat: 22, type: "sea", rotate: -55 },
+  { text: "Gulf of Aden", lon: 48, lat: 12.7, type: "sea" },
+  { text: "Arabian Sea", lon: 58, lat: 14, type: "sea" },
+  { text: "Persian Gulf", lon: 51, lat: 27.3, type: "sea", rotate: -30 },
+  { text: "Black Sea", lon: 34, lat: 43.2, type: "sea" },
+  { text: "Bab el-Mandeb", lon: 43.3, lat: 12.1, type: "feature" },
+  { text: "Suez Canal", lon: 32.5, lat: 30.5, type: "feature" },
+  { text: "GERD", lon: 35.3, lat: 11.2, type: "feature" },
+  { text: "Lake Tana", lon: 37.35, lat: 12.1, type: "feature" },
+  { text: "Jebel 'Amer (gold)", lon: 25.9, lat: 14.0, type: "feature" },
+  { text: "Kufra airbase", lon: 23.3, lat: 24.2, type: "feature" },
+  { text: "Nile", lon: 31.2, lat: 26, type: "river", rotate: -75 },
+  { text: "Blue Nile", lon: 34.5, lat: 11.5, type: "river" },
+  { text: "White Nile", lon: 31.5, lat: 10.0, type: "river" },
+  // Zoom-revealed features — mountains, plateaus, deserts, additional waterways
+  { text: "Ethiopian Highlands", lon: 38.5, lat: 10.2, type: "terrain", minZoom: 2.0, rotate: -15 },
+  { text: "Simien Mts", lon: 38.35, lat: 13.2, type: "terrain", minZoom: 2.0 },
+  { text: "Bale Mts", lon: 39.75, lat: 6.85, type: "terrain", minZoom: 2.0 },
+  { text: "Danakil Depression", lon: 40.8, lat: 13.6, type: "terrain", minZoom: 2.0 },
+  { text: "Red Sea Hills", lon: 35.5, lat: 19.5, type: "terrain", minZoom: 2.0, rotate: -70 },
+  { text: "Marra Mts", lon: 24.35, lat: 13.0, type: "terrain", minZoom: 2.0 },
+  { text: "Nuba Mts", lon: 30.8, lat: 11.2, type: "terrain", minZoom: 2.0 },
+  { text: "Tibesti Mts", lon: 17.8, lat: 21.2, type: "terrain", minZoom: 2.0 },
+  { text: "Ennedi Plateau", lon: 22.0, lat: 17.0, type: "terrain", minZoom: 2.0 },
+  { text: "Sahara Desert", lon: 22, lat: 25, type: "terrain-large", minZoom: 2.0, rotate: -5 },
+  { text: "Rub' al Khali", lon: 49.5, lat: 20.5, type: "terrain-large", minZoom: 2.0 },
+  { text: "Atbara R.", lon: 35.0, lat: 17.5, type: "river-sm", minZoom: 2.0, rotate: -40 },
+  { text: "Sobat R.", lon: 32.5, lat: 9.0, type: "river-sm", minZoom: 2.0 },
+  { text: "Omo R.", lon: 36.4, lat: 6.0, type: "river-sm", minZoom: 2.0, rotate: -70 },
+  { text: "Shabelle R.", lon: 44.5, lat: 4.5, type: "river-sm", minZoom: 2.0, rotate: 30 },
+  { text: "Juba R.", lon: 42.5, lat: 2.0, type: "river-sm", minZoom: 2.0, rotate: 40 },
+  { text: "Lake Turkana", lon: 36.1, lat: 3.5, type: "feature", minZoom: 2.0 },
+  { text: "Lake Victoria", lon: 33.0, lat: -1.3, type: "feature", minZoom: 2.0 },
+  { text: "Lake Nasser", lon: 32.5, lat: 22.8, type: "feature", minZoom: 2.0 },
+  { text: "Strait of Hormuz", lon: 56.5, lat: 26.5, type: "feature", minZoom: 2.0 },
+  { text: "Socotra", lon: 53.9, lat: 12.5, type: "feature", minZoom: 2.0 },
+];
+
+// Secondary cities — shown at zoom ≥ 2.5. Small dot + italic label.
+const SECONDARY_CITIES = [
+  { name: "Aswan", lat: 24.0889, lon: 32.8998, country: "EGY" },
+  { name: "Dongola", lat: 19.1772, lon: 30.4747, country: "SDN" },
+  { name: "Atbara", lat: 17.7017, lon: 33.9861, country: "SDN" },
+  { name: "Kassala", lat: 15.4510, lon: 36.3980, country: "SDN" },
+  { name: "Gedaref", lat: 14.0350, lon: 35.3836, country: "SDN" },
+  { name: "Wad Madani", lat: 14.4011, lon: 33.5197, country: "SDN" },
+  { name: "El Obeid", lat: 13.1839, lon: 30.2176, country: "SDN" },
+  { name: "Kosti", lat: 13.1625, lon: 32.6636, country: "SDN" },
+  { name: "Nyala", lat: 12.0489, lon: 24.8807, country: "SDN" },
+  { name: "Geneina", lat: 13.4524, lon: 22.4451, country: "SDN" },
+  { name: "Zalingei", lat: 12.9067, lon: 23.4839, country: "SDN" },
+  { name: "Bahir Dar", lat: 11.5959, lon: 37.3903, country: "ETH" },
+  { name: "Gondar", lat: 12.6, lon: 37.4667, country: "ETH" },
+  { name: "Dire Dawa", lat: 9.5907, lon: 41.8661, country: "ETH" },
+  { name: "Hawassa", lat: 7.0621, lon: 38.4763, country: "ETH" },
+  { name: "Jimma", lat: 7.6731, lon: 36.8349, country: "ETH" },
+  { name: "Dessie", lat: 11.1333, lon: 39.6333, country: "ETH" },
+  { name: "Gambela", lat: 8.2500, lon: 34.5833, country: "ETH" },
+  { name: "Assab", lat: 13.0096, lon: 42.7390, country: "ERI" },
+  { name: "Massawa", lat: 15.6092, lon: 39.4498, country: "ERI" },
+  { name: "Garowe", lat: 8.4055, lon: 48.4886, country: "SOM" },
+  { name: "Kismayo", lat: -0.3582, lon: 42.5454, country: "SOM" },
+  { name: "Baidoa", lat: 3.1167, lon: 43.6500, country: "SOM" },
+  { name: "Beledweyne", lat: 4.7357, lon: 45.2036, country: "SOM" },
+  { name: "Dhusamareb", lat: 5.5333, lon: 46.3833, country: "SOM" },
+  { name: "Merca", lat: 1.7145, lon: 44.7700, country: "SOM" },
+  { name: "Burao", lat: 9.52, lon: 45.53, country: "SOM_SML" },
+  { name: "Mombasa", lat: -4.0435, lon: 39.6682, country: "KEN" },
+  { name: "Lodwar", lat: 3.1192, lon: 35.5976, country: "KEN" },
+  { name: "Mandera", lat: 3.9366, lon: 41.8667, country: "KEN" },
+  { name: "Wau", lat: 7.7020, lon: 27.9990, country: "SSD" },
+  { name: "Malakal", lat: 9.5334, lon: 31.6605, country: "SSD" },
+  { name: "Bor", lat: 6.2086, lon: 31.5589, country: "SSD" },
+  { name: "Al-Hudaydah", lat: 14.7979, lon: 42.9545, country: "YEM" },
+  { name: "Al Mukalla", lat: 14.5333, lon: 49.1333, country: "YEM" },
+  { name: "Tobruk", lat: 32.0836, lon: 23.9634, country: "LBY" },
+  { name: "Sabha", lat: 27.0377, lon: 14.4283, country: "LBY" },
+  { name: "Alexandria", lat: 31.2001, lon: 29.9187, country: "EGY" },
+  { name: "Dammam", lat: 26.4207, lon: 50.0888, country: "SAU" },
+  { name: "Dubai", lat: 25.2048, lon: 55.2708, country: "UAE" },
+  { name: "Bandar Abbas", lat: 27.1865, lon: 56.2808, country: "IRN" },
+  { name: "Istanbul", lat: 41.0082, lon: 28.9784, country: "TUR" },
+  { name: "Sarh", lat: 9.15, lon: 18.39, country: "TCD" },
+  { name: "Abéché", lat: 13.8292, lon: 20.8324, country: "TCD" },
+];
+
+// Major ports and foreign military bases — shown at zoom ≥ 3.0.
+// Ports are square markers; bases are chevron markers tagged by flag.
+const PORTS = [
+  { name: "Port Sudan", lat: 19.6158, lon: 37.2164 },
+  { name: "Suakin", lat: 19.1067, lon: 37.3317 },
+  { name: "Massawa port", lat: 15.6092, lon: 39.4498 },
+  { name: "Assab port", lat: 13.0096, lon: 42.7390 },
+  { name: "Djibouti port", lat: 11.6017, lon: 43.1469 },
+  { name: "Doraleh (container)", lat: 11.6283, lon: 43.0756 },
+  { name: "Berbera port", lat: 10.4396, lon: 45.0143 },
+  { name: "Bosaso port", lat: 11.2842, lon: 49.1816 },
+  { name: "Mogadishu port", lat: 2.0270, lon: 45.3438 },
+  { name: "Kismayo port", lat: -0.3582, lon: 42.5454 },
+  { name: "Mombasa port", lat: -4.0435, lon: 39.6682 },
+  { name: "Lamu port", lat: -2.2717, lon: 40.9020 },
+  { name: "Jeddah Islamic Port", lat: 21.4667, lon: 39.1833 },
+  { name: "Yanbu", lat: 24.0889, lon: 38.0617 },
+  { name: "King Abdullah Port", lat: 22.4667, lon: 39.1 },
+  { name: "Hodeidah port", lat: 14.8000, lon: 42.9500 },
+  { name: "Aden port", lat: 12.7797, lon: 45.0367 },
+  { name: "Salalah port", lat: 16.9333, lon: 54.0167 },
+  { name: "Sohar", lat: 24.3617, lon: 56.7486 },
+  { name: "Jebel Ali", lat: 25.0159, lon: 55.0617 },
+  { name: "Khalifa port", lat: 24.8333, lon: 54.7000 },
+  { name: "Fujairah", lat: 25.1164, lon: 56.3414 },
+  { name: "Duqm", lat: 19.6500, lon: 57.7000 },
+  { name: "Bandar Abbas port", lat: 27.1333, lon: 56.0667 },
+  { name: "Chabahar", lat: 25.2919, lon: 60.6430 },
+  { name: "Alexandria port", lat: 31.1878, lon: 29.9183 },
+  { name: "Ain Sokhna", lat: 29.6000, lon: 32.3400 },
+  { name: "Benghazi port", lat: 32.1111, lon: 20.0578 },
+  { name: "Tobruk port", lat: 32.0836, lon: 23.9634 },
+];
+
+// Foreign military bases / facilities in the scene. flag = country code.
+const FOREIGN_BASES = [
+  { name: "Camp Lemonnier (US)",        lat: 11.5461, lon: 43.1597, flag: "USA" },
+  { name: "Chabelley airfield (US)",    lat: 11.5150, lon: 42.9175, flag: "USA" },
+  { name: "Manda Bay (US)",             lat: -2.2519, lon: 40.9092, flag: "USA" },
+  { name: "Baledogle (US support)",     lat: 2.8483, lon: 45.0700, flag: "USA" },
+  { name: "PLA Support Base (CHN)",     lat: 11.5861, lon: 43.0550, flag: "CHN" },
+  { name: "Russian facility (planned)", lat: 19.6158, lon: 37.2164, flag: "RUS" },
+  { name: "French forces Djibouti",     lat: 11.5450, lon: 43.1550, flag: "FRA" },
+  { name: "JSDF Djibouti (JPN)",        lat: 11.5481, lon: 43.1630, flag: "JPN" },
+  { name: "Italian base Djibouti",      lat: 11.5500, lon: 43.1600, flag: "ITA" },
+  { name: "UAE Berbera facility",       lat: 10.4000, lon: 44.9500, flag: "UAE" },
+  { name: "UAE Assab facility",         lat: 13.0000, lon: 42.7200, flag: "UAE" },
+  { name: "Turkish base TURKSOM",       lat: 2.0500, lon: 45.3100, flag: "TUR" },
+  { name: "Egyptian dets (AUSSOM)",     lat: 2.0467, lon: 45.3180, flag: "EGY" },
+];
+
+
+// Anchors for support-flow arrows (lon/lat)
+// Use broad country centroids or specific region points.
+const ANCHORS = {
+  SDN: [30, 16], SDN_SAF: [34, 17], SDN_RSF: [25, 14],
+  ETH: [39, 9], ETH_FED: [39, 9.5], ETH_TIGRAY: [39, 13.5], ETH_AMHARA: [38, 11.5], ETH_OROMIA: [39, 7.5],
+  SOM: [46, 5], SOM_FGS: [45, 3], SOM_SML: [45, 9.5], SOM_ASH: [42.5, 2.5],
+  EGY: [30, 27], TUR: [35, 39], UAE: [54, 24], QAT: [51, 25.3],
+  IRN: [53, 32], SAU: [45, 24], KEN: [38, 1], TCD: [18.7, 15],
+  ERI: [39, 15.5], DJI: [43, 11.6], SSD: [31, 7], YEM: [47, 15.5],
+  OMN: [56, 21], LBY: [17, 27], LBY_LNA: [21, 27],
+  // Off-map anchors (outside focus region → drawn at edge)
+  USA_OFFMAP: [-9, 30],       // enters from west
+  CHN_OFFMAP: [66, 32],       // enters from east
+  RUS_OFFMAP: [40, 48],       // enters from north
+};
+
+// Off-map "gateway" labels: where an external actor's arrows enter the map.
+// side: which edge of the viewport the label sits against — controls leader-line
+// direction + label placement. Clicking a gateway selects the matching country profile.
+const GATEWAYS = {
+  USA_OFFMAP: { label: "United States", code: "USA", side: "left" },
+  CHN_OFFMAP: { label: "China",         code: "CHN", side: "right" },
+  RUS_OFFMAP: { label: "Russia",        code: "RUS", side: "top" },
+};
+
+// Countries whose land path is clickable on the map (shows a profile in the rail).
+// Everything in focus + the two "sometimes-tinted" actors (SSD, ISR) that users
+// should be able to pick on any mode even when not shaded.
+const SELECTABLE_COUNTRIES = new Set([
+  "SDN","ETH","SOM","EGY","UAE","TUR","QAT","IRN","SAU","KEN","TCD",
+  "ERI","DJI","SSD","YEM","OMN","LBY","ISR"
+]);
+
+// Arrow style by type
+function arrowStyle(type) {
+  switch (type) {
+    case 'military':   return { dash: null, double: false, wavy: false };
+    case 'diplomatic': return { dash: '8 5', double: false, wavy: false };
+    case 'financial':  return { dash: '1.5 4', double: false, wavy: false };
+    case 'trade':      return { dash: null, double: true, wavy: false };
+    case 'illicit':    return { dash: null, double: false, wavy: true };
+    default:           return { dash: null, double: false, wavy: false };
+  }
+}
+function tierWidth(tier) { return { 1: 1.6, 2: 2.8, 3: 4.2 }[tier] || 2; }
+
+// ---------- Load map ----------
+let projection, pathGen, svg, width = 1000, height = 700;
+
+async function loadMap() {
+  try {
+    const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+    state.world = world;
+    const countries = topojson.feature(world, world.objects.countries).features;
+    countries.forEach(f => {
+      const code = NAME_TO_OUR[f.properties.name];
+      if (code) state.countriesByIso[code] = f;
+      state.countriesById[f.id] = f;
+    });
+    // Wait a tick so layout is settled before measuring (setTimeout, not rAF —
+    // rAF is paused in hidden tabs / background iframes and would hang forever).
+    await new Promise(r => setTimeout(r, 0));
+    initSvg();
+    render();
+    document.getElementById('loading').style.display = 'none';
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Failed to load map: ' + e.message;
+    console.error(e);
+  }
+}
+
+function initSvg() {
+  svg = d3.select('#mapSvg');
+  const wrap = document.querySelector('.map-wrap');
+  width = wrap.clientWidth; height = wrap.clientHeight;
+  svg.attr('viewBox', `0 0 ${width} ${height}`)
+     .attr('preserveAspectRatio', 'xMidYMid meet');
+
+  // Projection: center on NE Africa. Use Mercator for familiar shapes in this lat range.
+  // Focus area roughly lon 10..65, lat -5..45.
+  projection = d3.geoMercator();
+  pathGen = d3.geoPath(projection);
+
+  // Tight focus area as corner points (MultiPoint — works correctly with fitSize on Mercator).
+  // Lat bounds extended north (past Turkey's ~42°N) and south (past Kenya's
+  // ~-5°S) with ~15% headroom so no focus country is clipped by the frame.
+  const focus = {
+    type: 'MultiPoint',
+    coordinates: [[15, -10],[60, -10],[60, 47],[15, 47]]
+  };
+  projection.fitSize([width, height], focus);
+
+  // defs
+  const defs = svg.append('defs');
+  // Patterns + arrowheads
+  const allColors = new Set();
+  Object.values(DATA.modes).forEach(m => m.sides.forEach(s => allColors.add(s.color)));
+  allColors.forEach(c => {
+    const cid = c.replace('#','');
+    defs.append('marker')
+      .attr('id', `arrowhead-${cid}`)
+      .attr('viewBox', '0 0 10 10')
+      .attr('refX', 8).attr('refY', 5)
+      .attr('markerWidth', 6).attr('markerHeight', 6)
+      .attr('orient', 'auto-start-reverse')
+      .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 Z').attr('fill', c);
+    // Small variant for dense targets where many arrows converge
+    defs.append('marker')
+      .attr('id', `arrowhead-${cid}-sm`)
+      .attr('viewBox', '0 0 10 10')
+      .attr('refX', 8).attr('refY', 5)
+      .attr('markerWidth', 4).attr('markerHeight', 4)
+      .attr('orient', 'auto-start-reverse')
+      .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 Z').attr('fill', c);
+  });
+
+  ['saf','rsf','fed','tplf','fgs','sml','ash','neutral'].forEach(id => {
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--' + id).trim();
+    // Solid wash
+    defs.append('pattern')
+      .attr('id', `solid-${id}`)
+      .attr('patternUnits', 'userSpaceOnUse').attr('width', 10).attr('height', 10)
+      .html(`<rect width="10" height="10" fill="${color}" opacity="0.55"/>`);
+    // Diagonal hatch for contested / ash
+    defs.append('pattern')
+      .attr('id', `hatch-${id}`)
+      .attr('patternUnits', 'userSpaceOnUse').attr('width', 7).attr('height', 7).attr('patternTransform', 'rotate(45)')
+      .html(`<rect width="7" height="7" fill="${color}" opacity="0.25"/><line x1="0" y1="0" x2="0" y2="7" stroke="${color}" stroke-width="1.3"/>`);
+  });
+  // Contested (neutral hatch)
+  defs.append('pattern')
+    .attr('id', 'contested-hatch')
+    .attr('patternUnits', 'userSpaceOnUse').attr('width', 6).attr('height', 6).attr('patternTransform', 'rotate(45)')
+    .html(`<rect width="6" height="6" fill="#B5B0A0" opacity="0.35"/><line x1="0" y1="0" x2="0" y2="6" stroke="#7C766A" stroke-width="0.9"/>`);
+
+  // Clip to viewport
+  defs.append('clipPath').attr('id', 'view-clip')
+    .append('rect').attr('x', 0).attr('y', 0).attr('width', width).attr('height', height);
+
+  // Sea background — fills the whole frame; a nonscaling overlay so the sea
+  // color stays flat when the user zooms/pans inside the map.
+  svg.append('rect').attr('class', 'sea-bg').attr('width', width).attr('height', height);
+
+  // Everything that should pan/zoom lives inside #mapRoot. The zoom transform
+  // is applied here by d3.zoom; layers inside keep their projected coords.
+  const mapRoot = svg.append('g').attr('id', 'mapRoot').attr('clip-path', 'url(#view-clip)');
+  // Secondary sea fill — sits below land inside the zoomed group so the area
+  // outside the originally-rendered frame still reads as water when panned.
+  mapRoot.append('rect')
+    .attr('class', 'sea-bg-inner')
+    .attr('x', -width * 2).attr('y', -height * 2)
+    .attr('width', width * 5).attr('height', height * 5);
+  // Graticule (faint) — moved inside so it pans with the map
+  const grat = d3.geoGraticule().step([5, 5]);
+  mapRoot.append('path').datum(grat()).attr('class', 'graticule').attr('d', pathGen);
+
+  // Group layers (all panned/zoomed together).
+  mapRoot.append('g').attr('id', 'landLayer');
+  mapRoot.append('g').attr('id', 'tintLayer');
+  mapRoot.append('g').attr('id', 'borderLayer');
+  mapRoot.append('g').attr('id', 'riverLayer');
+  mapRoot.append('g').attr('id', 'arrowLayer');
+  mapRoot.append('g').attr('id', 'geoLayer');
+  mapRoot.append('g').attr('id', 'cityLayer');
+  mapRoot.append('g').attr('id', 'countryLabelLayer');
+  // Gateway chips are inside the zoomed root so they anchor to their entry
+  // points; text & markers are counter-scaled in updateZoomLayers.
+  mapRoot.append('g').attr('id', 'gatewayLayer');
+
+  // Render land & borders (mode-independent)
+  renderLand();
+  renderRivers();
+  renderGeoLabels();
+  renderCities();
+  renderCountryLabels();
+
+  // ---------- Zoom & pan ----------
+  // Clamp the user's panning to roughly the region bounded by:
+  //   west  : 13°E  (west of Chad's western border)
+  //   east  : 64°E  (east of Iran's eastern border)
+  //   north : 42°N  (north of Türkiye's north border)
+  //   south : -5°S  (south of Kenya's southern border)
+  // At zoom=1 the current fitSize focus is [15..60, -3..40]; we let users pan
+  // a small amount outside that box, up to these hard walls.
+  const clampBox = [projection([13, 42]), projection([64, -5])];
+  const translateExtent = [
+    [Math.min(clampBox[0][0], clampBox[1][0]), Math.min(clampBox[0][1], clampBox[1][1])],
+    [Math.max(clampBox[0][0], clampBox[1][0]), Math.max(clampBox[0][1], clampBox[1][1])],
+  ];
+  const zoomBehavior = d3.zoom()
+    .scaleExtent([1, 8])
+    .translateExtent(translateExtent)
+    .filter(event => {
+      // Allow wheel zoom + left-button drag; disable middle/right-button drags.
+      if (event.type === 'wheel') return true;
+      if (event.type === 'mousedown') return event.button === 0;
+      return !event.ctrlKey && !event.button;
+    })
+    .on('zoom', (event) => {
+      svg.select('#mapRoot').attr('transform', event.transform);
+      updateZoomLayers(event.transform.k);
+    });
+  svg.call(zoomBehavior);
+  state.zoom = zoomBehavior;
+  // Start at identity — kick off one update so counter-scaled strokes are right.
+  updateZoomLayers(1);
+}
+
+// Show/hide zoom-dependent layers AND counter-scale line widths + label sizes
+// so the map doesn't get a heavier visual weight the more you zoom in.
+function updateZoomLayers(k) {
+  if (!svg) return;
+  // Reveal thresholds (match the data annotations above).
+  const showSecondaryCities = k >= 2.5;
+  const showPortsAndBases   = k >= 3.0;
+  const showGeoZ2           = k >= 2.0;
+
+  svg.select('.city-secondary').style('display', showSecondaryCities ? null : 'none');
+  svg.select('.port-layer').style('display', showPortsAndBases ? null : 'none');
+  svg.select('.base-layer').style('display', showPortsAndBases ? null : 'none');
+  svg.select('.geo-z2').style('display', showGeoZ2 ? null : 'none');
+  svg.select('.river-secondary').style('display', showGeoZ2 ? null : 'none');
+
+  // Counter-scale: keep line weights and text visually constant as k grows.
+  // We use vector-effect: non-scaling-stroke via a CSS var on mapRoot, and
+  // shrink font-size through a computed style variable.
+  const mapRoot = svg.select('#mapRoot');
+  mapRoot.style('--k', k);
+
+  // Splay labels for clustered bases: place each label anchor at a constant
+  // screen-pixel offset from the marker (ringR pixels ÷ k, so it stays
+  // the same visual size), and draw the leader line back to the marker.
+  // Counter-scale marker anchors — keeps triangle markers at a constant
+  // on-screen size and pushes each one to its screen-px offset on the
+  // inner cluster ring.
+  svg.selectAll('.base-marker-anchor').each(function() {
+    const el = d3.select(this);
+    const lx = +el.attr('data-lx') || 0;
+    const ly = +el.attr('data-ly') || 0;
+    el.attr('transform', `translate(${lx/k} ${ly/k}) scale(${1/k})`);
+  });
+
+  // Label anchors — position + counter-scale. Leader line runs from the
+  // label origin (0,0 in anchor-local coords, which is screen-px after the
+  // 1/k scale) back toward the marker position. For cluster labels, the
+  // marker sits on the inner ring at (markerR * cos, markerR * sin) in
+  // screen-px; the label origin sits on the outer ring at (labelR * cos,
+  // labelR * sin); so the leader endpoint in anchor-local coords is
+  // ((markerR - labelR) * cos, (markerR - labelR) * sin).
+  svg.selectAll('.base-label-anchor').each(function() {
+    const el = d3.select(this);
+    const lx = +el.attr('data-lx');
+    const ly = +el.attr('data-ly');
+    el.attr('transform', `translate(${lx/k} ${ly/k}) scale(${1/k})`);
+    const leader = el.select('line[data-leader]');
+    if (leader.size()) {
+      const markerR = +leader.attr('data-marker-r');
+      const labelR  = +leader.attr('data-label-r');
+      const ang     = +leader.attr('data-angle');
+      if (isFinite(markerR) && isFinite(labelR) && isFinite(ang)) {
+        // Cluster label: stop leader short of the marker (4px gap).
+        const endR = markerR - labelR + 5; // negative, pulled in 5px
+        leader.attr('x2', endR * Math.cos(ang))
+              .attr('y2', endR * Math.sin(ang));
+      } else {
+        // Solo label: leader goes straight back to origin of marker group.
+        leader.attr('x2', -lx).attr('y2', -ly);
+      }
+    }
+  });
+
+  // --- Collision resolution for base labels ---
+  // Two rounds of pushing overlapping labels apart along the screen Y axis so
+  // Djibouti-cluster labels don't collide with Berbera, Assab, etc. at
+  // different zooms. We read on-screen bounding boxes, detect pairwise
+  // overlaps, and nudge the farther (lower) of each pair downward/upward in
+  // the anchor's local coords — enough to separate them vertically. The
+  // anchor uses translate(lx/k, ly/k) scale(1/k), so 1px on-screen equals
+  // 1 unit when added to the transform's translate output... but it's
+  // easier to just bump the data-ly and re-apply.
+  const labelEls = svg.selectAll('.base-label-anchor').nodes();
+  const rects = labelEls.map(el => {
+    const t = el.querySelector('text');
+    if (!t) return null;
+    const bb = t.getBoundingClientRect();
+    return { el, x1: bb.x, y1: bb.y, x2: bb.x + bb.width, y2: bb.y + bb.height };
+  });
+  for (let iter = 0; iter < 6; iter++) {
+    let moved = false;
+    for (let i = 0; i < rects.length; i++) {
+      for (let j = i + 1; j < rects.length; j++) {
+        const a = rects[i], b = rects[j];
+        if (!a || !b) continue;
+        if (a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1) {
+          // Overlap — nudge the lower one further down (or upper one up) by
+          // the vertical overlap amount + 2px padding.
+          const overlap = Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1) + 3;
+          const target = (a.y1 > b.y1) ? a : b;
+          const el = d3.select(target.el);
+          const ly0 = +el.attr('data-ly') || 0;
+          // target.el's anchor scales by 1/k, so to move `overlap` screen-px
+          // in map coords we add overlap*k... but data-ly is in screen-px
+          // (labelR). Actually updateZoomLayers applies lx/k so data-ly is
+          // in a weird hybrid unit. Test: data-ly = labelR*sin, in update
+          // we translate(ly/k). Translate is in PARENT coords (mapRoot) where
+          // 1 unit = k on-screen px. So final on-screen offset = ly/k * k = ly px.
+          // Therefore data-ly IS in on-screen px — add overlap directly.
+          el.attr('data-ly', ly0 + overlap);
+          el.attr('transform', `translate(${(+el.attr('data-lx'))/k} ${(ly0+overlap)/k}) scale(${1/k})`);
+          // Update the cached rect for next pass.
+          target.y1 += overlap;
+          target.y2 += overlap;
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  // Redraw leader lines to follow any nudged labels.
+  svg.selectAll('.base-label-anchor').each(function() {
+    const el = d3.select(this);
+    const leader = el.select('line[data-leader]');
+    if (!leader.size()) return;
+    const markerR = +leader.attr('data-marker-r');
+    const labelR  = +leader.attr('data-label-r');
+    const ang     = +leader.attr('data-angle');
+    const lx = +el.attr('data-lx');
+    const ly = +el.attr('data-ly');
+    if (isFinite(markerR) && isFinite(labelR) && isFinite(ang)) {
+      // Leader endpoint = marker position relative to label anchor origin.
+      // Marker is at (markerR*cos, markerR*sin) in screen-px from centroid;
+      // label is at (lx, ly) in screen-px from centroid. So endpoint in
+      // anchor-local coords = (markerR*cos - lx, markerR*sin - ly), then
+      // pulled in 5px along that vector.
+      let ex = markerR * Math.cos(ang) - lx;
+      let ey = markerR * Math.sin(ang) - ly;
+      const d = Math.hypot(ex, ey) || 1;
+      ex -= (ex / d) * 5;
+      ey -= (ey / d) * 5;
+      leader.attr('x2', ex).attr('y2', ey);
+    } else {
+      leader.attr('x2', -lx).attr('y2', -ly);
+    }
+  });
+}
+
+// Reset zoom to fit.
+function resetZoom() {
+  if (svg && state.zoom) {
+    svg.transition().duration(400).call(state.zoom.transform, d3.zoomIdentity);
+  }
+}
+
+function renderLand() {
+  const countries = topojson.feature(state.world, state.world.objects.countries).features;
+  const landLayer = svg.select('#landLayer');
+  const borderLayer = svg.select('#borderLayer');
+
+  landLayer.selectAll('path')
+    .data(countries).enter()
+    .append('path')
+    .attr('d', pathGen)
+    .attr('class', d => {
+      const code = NAME_TO_OUR[d.properties.name];
+      return FOCUS_COUNTRIES.has(code) ? 'land' : 'context-land';
+    })
+    .style('cursor', d => {
+      const code = NAME_TO_OUR[d.properties.name];
+      return SELECTABLE_COUNTRIES.has(code) ? 'pointer' : null;
+    })
+    .on('click', (event, d) => {
+      const code = NAME_TO_OUR[d.properties.name];
+      if (SELECTABLE_COUNTRIES.has(code)) selectCountry(code);
+    });
+
+  // Country borders (mesh)
+  const borders = topojson.mesh(state.world, state.world.objects.countries, (a,b) => a !== b);
+  borderLayer.append('path').datum(borders).attr('class', 'border').attr('d', pathGen);
+}
+
+function renderRivers() {
+  // Hand-coded simplified Nile + tributaries (lon/lat waypoints)
+  const nile = [
+    [31.23, 30.05], [32.00, 29.0], [32.55, 25.7], [32.90, 24.0],
+    [32.10, 22.0], [31.20, 20.5], [32.55, 15.5], // Khartoum confluence
+  ];
+  const whiteNile = [
+    [32.55, 15.5], [32.10, 13.5], [31.60, 10.5], [31.55, 7.5], [31.57, 4.86]
+  ];
+  const blueNile = [
+    [32.55, 15.5], [34.0, 13.5], [35.5, 12.2], [37.3, 12.0] // Lake Tana
+  ];
+  // Additional rivers — revealed at zoom ≥ 2.0 via opacity toggle on the group
+  const atbara = [[32.55, 15.5], [33.8, 16.8], [35.5, 18.5], [37.2, 20.0]];
+  const sobat  = [[31.55, 9.4], [32.3, 9.15], [33.8, 8.8], [35.4, 8.5]];
+  const omo    = [[36.1, 4.5], [36.3, 5.5], [36.4, 7.0], [36.8, 8.2], [37.2, 9.0]];
+  const shabelle = [[45.0, 2.1], [44.5, 3.2], [44.0, 4.8], [43.2, 6.0], [41.5, 7.5], [39.5, 8.5], [38.7, 9.0]];
+  const juba   = [[42.5, -0.25], [42.5, 1.5], [42.7, 3.0], [42.3, 4.5], [41.5, 6.0], [40.0, 7.5], [39.3, 8.2]];
+
+  const riverLayer = svg.select('#riverLayer');
+  [nile, whiteNile, blueNile].forEach(r => {
+    riverLayer.append('path')
+      .datum({ type: 'LineString', coordinates: r })
+      .attr('d', pathGen)
+      .attr('class', 'river');
+  });
+  // Secondary rivers in their own sub-group so we can toggle visibility by zoom.
+  const secRivers = riverLayer.append('g').attr('class', 'river-secondary');
+  [atbara, sobat, omo, shabelle, juba].forEach(r => {
+    secRivers.append('path')
+      .datum({ type: 'LineString', coordinates: r })
+      .attr('d', pathGen)
+      .attr('class', 'river river-sm');
+  });
+}
+
+function renderGeoLabels() {
+  const layer = svg.select('#geoLayer');
+  // Separate sub-groups so we can toggle by zoom threshold.
+  const groups = {
+    base: layer.append('g').attr('class', 'geo-group geo-base'),
+    z2:   layer.append('g').attr('class', 'geo-group geo-z2').style('display', 'none'),
+  };
+  GEO_LABELS.forEach(g => {
+    const [x, y] = projection([g.lon, g.lat]);
+    if (!isFinite(x) || !isFinite(y)) return;
+    const target = g.minZoom && g.minZoom >= 2 ? groups.z2 : groups.base;
+
+    if (g.type === 'feature') {
+      target.append('circle').attr('cx', x).attr('cy', y).attr('r', 2.5).attr('class', 'feature-dot');
+      target.append('text').attr('x', x + 6).attr('y', y + 3).attr('class', 'feature-label').text(g.text);
+    } else if (g.type === 'terrain' || g.type === 'terrain-large') {
+      const t = target.append('text')
+        .attr('x', x).attr('y', y)
+        .attr('class', 'terrain-label' + (g.type === 'terrain-large' ? ' large' : ''))
+        .attr('text-anchor', 'middle')
+        .text(g.text);
+      if (g.rotate) t.attr('transform', `rotate(${g.rotate} ${x} ${y})`);
+    } else if (g.type === 'river-sm') {
+      const t = target.append('text')
+        .attr('x', x).attr('y', y)
+        .attr('class', 'river-label sm')
+        .attr('text-anchor', 'middle')
+        .text(g.text);
+      if (g.rotate) t.attr('transform', `rotate(${g.rotate} ${x} ${y})`);
+    } else {
+      const t = target.append('text')
+        .attr('x', x).attr('y', y)
+        .attr('class', 'geo-label' + (g.type === 'sea-large' ? ' large' : '') + (g.type === 'river' ? ' river-label' : ''))
+        .attr('text-anchor', 'middle')
+        .text(g.text);
+      if (g.rotate) t.attr('transform', `rotate(${g.rotate} ${x} ${y})`);
+    }
+  });
+}
+
+function renderCountryLabels() {
+  const layer = svg.select('#countryLabelLayer');
+  LABEL_COUNTRIES.forEach(code => {
+    const feat = state.countriesByIso[code];
+    if (!feat) return;
+    const c = pathGen.centroid(feat);
+    if (!isFinite(c[0])) return;
+    if (c[0] < -20 || c[0] > width + 20 || c[1] < -20 || c[1] > height + 20) return;
+    const dc = DATA.countries[code];
+    const name = dc ? dc.name : feat.properties.name;
+    layer.append('text')
+      .attr('x', c[0]).attr('y', c[1])
+      .attr('class', 'country-label')
+      .text(name);
+  });
+}
+
+function renderCities() {
+  const layer = svg.select('#cityLayer');
+  layer.selectAll('*').remove();
+
+  // Primary cities — always visible.
+  const primary = layer.append('g').attr('class', 'city-primary');
+  CITIES.forEach(c => {
+    const [x, y] = projection([c.lon, c.lat]);
+    if (!isFinite(x)) return;
+    if (c.capital) {
+      primary.append('circle').attr('cx', x).attr('cy', y).attr('r', 3.2).attr('class', 'city-ring');
+      primary.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot');
+    } else {
+      primary.append('circle').attr('cx', x).attr('cy', y).attr('r', 2).attr('class', 'city-dot');
+    }
+    primary.append('text')
+      .attr('x', x + 6).attr('y', y + 3.5)
+      .attr('class', 'city-label' + (c.capital ? ' capital' : ''))
+      .text(c.name);
+  });
+
+  // Secondary cities — shown at zoom ≥ 2.5.
+  const secondary = layer.append('g').attr('class', 'city-secondary').style('display', 'none');
+  SECONDARY_CITIES.forEach(c => {
+    const [x, y] = projection([c.lon, c.lat]);
+    if (!isFinite(x)) return;
+    secondary.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot secondary');
+    secondary.append('text')
+      .attr('x', x + 5).attr('y', y + 3)
+      .attr('class', 'city-label secondary')
+      .text(c.name);
+  });
+
+  // Ports — shown at zoom ≥ 3.0. Square marker.
+  const ports = layer.append('g').attr('class', 'port-layer').style('display', 'none');
+  PORTS.forEach(p => {
+    const [x, y] = projection([p.lon, p.lat]);
+    if (!isFinite(x)) return;
+    ports.append('rect')
+      .attr('x', x - 2.6).attr('y', y - 2.6).attr('width', 5.2).attr('height', 5.2)
+      .attr('class', 'port-marker');
+    ports.append('text')
+      .attr('x', x + 6).attr('y', y + 3)
+      .attr('class', 'port-label')
+      .text(p.name);
+  });
+
+  // Foreign bases — shown at zoom ≥ 3.0. Chevron-ish marker color-coded by flag.
+  // Djibouti is an extreme cluster case (Camp Lemonnier + Chabelley + PLA +
+  // French + JSDF + Italian bases within a few km of each other), so we group
+  // nearby bases and splay their labels radially from the cluster centroid
+  // with short leader lines connecting each marker to its label.
+  const bases = layer.append('g').attr('class', 'base-layer').style('display', 'none');
+  const BASE_COLORS = {
+    USA: '#1F3A5F', CHN: '#B5651D', RUS: '#7A5C3A',
+    FRA: '#4A6FA5', JPN: '#8A5A7C', ITA: '#6B8E6F',
+    UAE: '#7D8440', TUR: '#7A3030', EGY: '#8A6D3B',
+  };
+
+  // Cluster bases whose geographic positions are within ~30km of each other
+  // (0.3° threshold is generous — works at all zoom levels since we splay in
+  // screen-space, not geo-space).
+  const clusters = clusterBases(FOREIGN_BASES, 0.3);
+
+  clusters.forEach(cluster => {
+    // Cluster centroid in projected pixels
+    const cpts = cluster.map(b => projection([b.lon, b.lat])).filter(p => p && isFinite(p[0]));
+    if (!cpts.length) return;
+    const cx = cpts.reduce((s,p) => s + p[0], 0) / cpts.length;
+    const cy = cpts.reduce((s,p) => s + p[1], 0) / cpts.length;
+
+    if (cluster.length === 1) {
+      // Solo base — marker + adjacent label, both wrapped in counter-scaled
+      // anchors so their pixel size stays constant across zoom levels.
+      const b = cluster[0];
+      const [x, y] = projection([b.lon, b.lat]);
+      const color = BASE_COLORS[b.flag] || '#555';
+      const mGroup = bases.append('g')
+        .attr('class', 'base-marker-group')
+        .attr('transform', `translate(${x} ${y})`);
+      const mAnchor = mGroup.append('g').attr('class', 'base-marker-anchor');
+      mAnchor.append('path')
+        .attr('d', `M 0 -4.2 L 3.6 3.2 L -3.6 3.2 Z`)
+        .attr('class', 'base-marker')
+        .attr('fill', color);
+      // Label — counter-scaled anchor; place to upper-right at fixed screen px.
+      const labelGroup = bases.append('g')
+        .attr('class', 'base-label-group')
+        .attr('transform', `translate(${x} ${y})`);
+      const labelAnchor = labelGroup.append('g')
+        .attr('class', 'base-label-anchor')
+        .attr('data-lx', 10)
+        .attr('data-ly', 0);
+      labelAnchor.append('text')
+        .attr('class', 'base-label')
+        .attr('text-anchor', 'start')
+        .attr('dx', 0).attr('dy', 3)
+        .text(b.name);
+      return;
+    }
+
+    // Cluster: draw each marker at its true location, then arrange labels
+    // on a ring around the cluster centroid. A leader line connects every
+    // marker to its label so the user can tell which base is which.
+    // Ring radius is in inverse-k CSS units so it stays a constant visible
+    // size regardless of zoom. We expose the (x,y) of each label through
+    // data-label-angle so the label text can be placed via CSS custom props.
+    // Cluster rendering strategy: because the bases sit within a few km of
+    // each other, we abandon their true pixel positions and instead place
+    // both markers AND labels on two concentric rings around the cluster
+    // centroid. Marker ring (inner) + label ring (outer). Both are anchored
+    // in geo-space at the centroid, then the on-screen offsets are applied
+    // via inverse-scaled <g> elements so the rings have constant pixel size
+    // at every zoom level. This is what eliminates marker overlap.
+    const n = cluster.length;
+    // Sort by angle from centroid so the ring order roughly mirrors the
+    // geographic arrangement.
+    const withAngle = cluster.map((b, i) => {
+      const p = projection([b.lon, b.lat]);
+      const dx = p[0] - cx, dy = p[1] - cy;
+      const angle = (dx === 0 && dy === 0) ? (i * 2 * Math.PI / n) : Math.atan2(dy, dx);
+      return { b, p, angle };
+    }).sort((a,z) => a.angle - z.angle);
+
+    // Ring radii scale with cluster size — more bases need more room.
+    const markerR = Math.max(14, 6 + n * 2.2);   // inner ring (screen px)
+    const labelR  = markerR + 44;                 // outer ring (screen px)
+    const startAngle = withAngle[0].angle;
+
+    withAngle.forEach((item, i) => {
+      const { b } = item;
+      const ang = startAngle + (i * 2 * Math.PI / n);
+      const color = BASE_COLORS[b.flag] || '#555';
+      const cosA = Math.cos(ang), sinA = Math.sin(ang);
+
+      // --- Marker on the inner ring (screen-constant offset from centroid) ---
+      const mGroup = bases.append('g')
+        .attr('class', 'base-marker-group')
+        .attr('transform', `translate(${cx} ${cy})`);
+      const mAnchor = mGroup.append('g')
+        .attr('class', 'base-marker-anchor')
+        .attr('data-lx', markerR * cosA)
+        .attr('data-ly', markerR * sinA);
+      mAnchor.append('path')
+        .attr('d', `M 0 -4.2 L 3.6 3.2 L -3.6 3.2 Z`)
+        .attr('class', 'base-marker')
+        .attr('fill', color);
+
+      // --- Label on the outer ring + leader from marker ring to label ring ---
+      const labelGroup = bases.append('g')
+        .attr('class', 'base-label-group')
+        .attr('transform', `translate(${cx} ${cy})`);
+      const labelAnchor = labelGroup.append('g')
+        .attr('class', 'base-label-anchor')
+        .attr('data-lx', labelR * cosA)
+        .attr('data-ly', labelR * sinA);
+
+      // Leader: from label origin (0,0) back toward the marker position
+      // (which sits at (markerR - labelR) along the same radial). The
+      // updateZoomLayers function rewrites x2/y2 per tick so the leader
+      // always reaches the marker regardless of zoom.
+      labelAnchor.append('line')
+        .attr('class', 'base-leader')
+        .attr('x1', 0).attr('y1', 0)
+        .attr('data-leader', '1')
+        .attr('data-marker-r', markerR)
+        .attr('data-label-r', labelR)
+        .attr('data-angle', ang);
+
+      // Text — anchor side based on which half of the ring the label is on.
+      const rightSide = cosA >= -0.01;
+      labelAnchor.append('text')
+        .attr('class', 'base-label')
+        .attr('text-anchor', rightSide ? 'start' : 'end')
+        .attr('dx', rightSide ? 5 : -5).attr('dy', 3)
+        .text(b.name);
+    });
+  });
+}
+
+// Single-link clustering by geo distance (degrees). Lat/lon euclidean is fine
+// here since all our base clusters are tight (a few km).
+function clusterBases(items, thresholdDeg) {
+  const remaining = items.slice();
+  const clusters = [];
+  while (remaining.length) {
+    const seed = remaining.shift();
+    const group = [seed];
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (let i = remaining.length - 1; i >= 0; i--) {
+        const b = remaining[i];
+        if (group.some(g => {
+          const dx = g.lon - b.lon, dy = g.lat - b.lat;
+          return Math.hypot(dx, dy) <= thresholdDeg;
+        })) {
+          group.push(b);
+          remaining.splice(i, 1);
+          grew = true;
+        }
+      }
+    }
+    clusters.push(group);
+  }
+  return clusters;
+}
+
+// ---------- Mode overlays ----------
+function render() {
+  const modeData = DATA.modes[state.mode];
+  document.getElementById('subtitle').textContent = modeData.subtitle;
+  document.querySelectorAll('#modeToggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === state.mode);
+  });
+
+  renderTints();
+  renderArrows();
+  renderOffMapGateways();
+  renderRail();
+  renderLegend();
+  localStorage.setItem('conflict_mode', state.mode);
+}
+
+// Rough sub-region polygons (lon/lat) — used when we need to tint a sub-area (Darfur, Tigray, Somaliland, etc.)
+// These are approximate, hand-coded for illustrative shading.
+const SUB_REGIONS = {
+  SDN_RSF: [[22.0,22.0],[27.5,22.0],[28.5,17.0],[28.0,11.0],[23.0,10.0],[22.0,12.5]], // Darfur + W. Kordofan-ish
+  SDN_SAF: [[28.5,22.0],[37.5,22.5],[38.2,18.5],[35.5,14.0],[34.0,10.5],[28.5,11.5],[28.5,17.0]], // N, E, central incl. Port Sudan
+  SDN_CONTESTED: [[30.0,15.5],[33.5,15.5],[33.8,13.0],[30.0,13.0]], // Khartoum/Gezira strip
+  ETH_TIGRAY: [[36.5,13.2],[39.8,14.5],[40.5,13.0],[38.5,12.4]],
+  ETH_AMHARA: [[36.2,12.8],[39.2,12.8],[39.2,10.5],[36.5,10.5]],
+  ETH_OROMIA: [[34.5,9.5],[42.0,9.5],[42.0,5.5],[36.0,5.0]],
+  ETH_FED: null, // falls back to whole Ethiopia minus the above
+  SOM_SML: [[43.0,11.5],[49.0,11.5],[49.0,9.2],[43.0,9.2]], // Somaliland
+  SOM_FGS: [[41.5,10.5],[46.0,5.0],[42.0,-1.5],[41.0,2.0]], // south + central (approx)
+  SOM_ASH: [[42.5,4.0],[45.0,4.0],[45.5,1.5],[42.5,1.5]],
+  LBY_LNA: [[20.0,32.5],[25.5,32.5],[25.5,20.5],[20.0,20.5]],
+};
+
+function subRegionPath(id) {
+  const coords = SUB_REGIONS[id];
+  if (!coords) return null;
+  // close polygon
+  const ring = coords.concat([coords[0]]);
+  const feat = { type: 'Polygon', coordinates: [ring] };
+  return pathGen(feat);
+}
+
+function renderTints() {
+  const layer = svg.select('#tintLayer');
+  layer.selectAll('*').remove();
+  const mode = DATA.modes[state.mode];
+
+  Object.entries(mode.alignments).forEach(([regionId, side]) => {
+    let pathD = null, country = null;
+
+    if (SUB_REGIONS[regionId] !== undefined) {
+      pathD = subRegionPath(regionId);
+      country = regionId.split('_')[0];
+    } else if (state.countriesByIso[regionId]) {
+      pathD = pathGen(state.countriesByIso[regionId]);
+      country = regionId;
+    }
+    if (!pathD) return;
+
+    let fill;
+    if (side === 'contested') fill = 'url(#contested-hatch)';
+    else if (side === 'neutral') {
+      fill = getComputedStyle(document.documentElement).getPropertyValue('--neutral').trim();
+    } else if (side === 'ash') {
+      fill = 'url(#hatch-ash)';
+    } else {
+      fill = `url(#solid-${side})`;
+    }
+
+    layer.append('path')
+      .attr('d', pathD)
+      .attr('class', 'tint')
+      .attr('fill', fill)
+      .attr('opacity', side === 'neutral' ? 0.35 : 1)
+      .style('cursor', 'pointer')
+      .on('click', () => selectCountry(country));
+  });
+}
+
+// Curve between two projected points
+function curvePath(x1, y1, x2, y2, curvature = 0.25) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  const ox = -dy * curvature, oy = dx * curvature;
+  return `M ${x1} ${y1} Q ${mx + ox} ${my + oy} ${x2} ${y2}`;
+}
+function wavyPath(x1, y1, x2, y2, amp = 5) {
+  const dx = x2 - x1, dy = y2 - y1, dist = Math.hypot(dx, dy);
+  if (dist < 1) return `M ${x1} ${y1} L ${x2} ${y2}`;
+  const ux = dx/dist, uy = dy/dist, nx = -uy, ny = ux;
+  const waves = Math.max(3, Math.floor(dist / 40));
+  let d = `M ${x1} ${y1}`;
+  for (let i = 1; i <= waves; i++) {
+    const t = i / waves;
+    const px = x1 + dx * t, py = y1 + dy * t;
+    const sign = (i % 2 === 0) ? 1 : -1;
+    const cpx = px - dx/waves/2 + nx * amp * sign;
+    const cpy = py - dy/waves/2 + ny * amp * sign;
+    d += ` Q ${cpx} ${cpy} ${px} ${py}`;
+  }
+  return d;
+}
+
+function anchorProjected(id) {
+  const a = ANCHORS[id];
+  if (!a) return null;
+  const p = projection(a);
+  return p;
+}
+
+function renderArrows() {
+  const layer = svg.select('#arrowLayer');
+  layer.selectAll('*').remove();
+  const arrows = DATA.arrows[state.mode] || [];
+  const mode = DATA.modes[state.mode];
+
+  // Count arrows per from-to pair (for curvature splay between two nodes)
+  // AND per target (for fanning the landing points so arrowheads don't stack).
+  const pairCounts = {};
+  const targetCounts = {};
+  arrows.forEach(a => {
+    const k = [a.from, a.to].sort().join('|');
+    pairCounts[k] = (pairCounts[k]||0) + 1;
+    targetCounts[a.to] = (targetCounts[a.to]||0) + 1;
+  });
+  const pairSeen = {};
+  const targetSeen = {};
+
+  arrows.forEach(a => {
+    const fromP = anchorProjected(a.from);
+    const toP = anchorProjected(a.to);
+    if (!fromP || !toP) return;
+
+    const sideObj = mode.sides.find(s => s.id === a.side);
+    const color = sideObj ? sideObj.color : '#666';
+    const style = arrowStyle(a.type);
+    const w = tierWidth(a.tier);
+
+    const key = [a.from, a.to].sort().join('|');
+    pairSeen[key] = (pairSeen[key]||0) + 1;
+    const n = pairSeen[key], total = pairCounts[key];
+    const curv = total === 1 ? 0.25 : (n - (total+1)/2) * (0.38 / total) + 0.2;
+
+    // Fan arrowheads around the target so multiple arrows don't stack into
+    // one unreadable blob. Each incoming arrow lands on its own small arc
+    // position around toP; the bearing from the origin controls WHICH side
+    // of the target the arrow comes in from, then within that side we spread
+    // evenly by arrival index.
+    const tTotal = targetCounts[a.to];
+    targetSeen[a.to] = (targetSeen[a.to]||0) + 1;
+    const ti = targetSeen[a.to];
+    let endX = toP[0], endY = toP[1];
+    if (tTotal > 1) {
+      const bearing = Math.atan2(fromP[1] - toP[1], fromP[0] - toP[0]);
+      // ±28° fan, evenly distributed around the approach bearing
+      const fan = 28 * Math.PI / 180;
+      const offset = ((ti - (tTotal + 1) / 2) / Math.max(1, tTotal - 1)) * fan * 2;
+      const theta = bearing + offset;
+      // Landing-point radius scales with density but caps so far-apart arrows
+      // still clearly point at the same country.
+      const r = Math.min(18, 6 + tTotal * 2.2);
+      endX = toP[0] + Math.cos(theta) * r;
+      endY = toP[1] + Math.sin(theta) * r;
+    }
+
+    let d;
+    if (style.wavy) d = wavyPath(fromP[0], fromP[1], endX, endY, 6);
+    else d = curvePath(fromP[0], fromP[1], endX, endY, curv);
+
+    const cid = color.replace('#','');
+
+    // Shrink the arrowhead when many arrows converge so heads don't visually
+    // swallow the destination. Size is applied per-path via marker-end href;
+    // the base marker is 6×6, we scale down to 4×4 for dense targets.
+    const headDense = tTotal >= 4;
+    const headMarker = `url(#arrowhead-${cid}${headDense ? '-sm' : ''})`;
+
+    // Halo for clicks
+    layer.append('path')
+      .attr('d', d)
+      .attr('class', 'arrow-halo')
+      .attr('stroke', 'transparent')
+      .attr('stroke-width', Math.max(16, w + 14))
+      .style('pointer-events', 'stroke')
+      .style('cursor', 'pointer')
+      .on('click', () => selectArrow(a.id));
+
+    if (style.double) {
+      // Double line effect: thick color + white inner
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w + 2.2).attr('fill','none').attr('opacity', 0.9).attr('class','arrow').style('pointer-events','stroke').style('cursor','pointer').on('click', () => selectArrow(a.id));
+      layer.append('path').attr('d', d).attr('stroke', '#FAF8F3').attr('stroke-width', Math.max(0.8, w - 0.8)).attr('fill','none').attr('class','arrow').style('pointer-events','none');
+      // head
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('fill','none').attr('class','arrow').attr('marker-end', headMarker).attr('opacity', 0).style('pointer-events','none');
+    } else {
+      const p = layer.append('path')
+        .attr('d', d)
+        .attr('class', 'arrow')
+        .attr('stroke', color).attr('stroke-width', w)
+        .attr('fill', 'none').attr('stroke-linecap', 'round')
+        .attr('opacity', 0.88)
+        .attr('marker-end', headMarker)
+        .style('pointer-events','stroke').style('cursor','pointer')
+        .on('click', () => selectArrow(a.id));
+      if (style.dash) p.attr('stroke-dasharray', style.dash);
+    }
+  });
+}
+
+// Draw labeled "gateway" chips at the edge of the map for off-map actors
+// (USA, China, Russia). Only shows gateways that actually have arrows in the
+// current mode, so unused powers don't crowd the frame.
+function renderOffMapGateways() {
+  const layer = svg.select('#gatewayLayer');
+  layer.selectAll('*').remove();
+
+  const arrows = DATA.arrows[state.mode] || [];
+  // Which gateways have at least one arrow leaving them in this mode?
+  const activeIds = new Set();
+  arrows.forEach(a => {
+    if (GATEWAYS[a.from]) activeIds.add(a.from);
+    if (GATEWAYS[a.to])   activeIds.add(a.to);
+  });
+
+  activeIds.forEach(anchorId => {
+    const cfg = GATEWAYS[anchorId];
+    const anchor = ANCHORS[anchorId];
+    if (!anchor || !cfg) return;
+    const p = projection(anchor);
+    if (!p) return;
+
+    // Clamp to a short inset from the map edge so the chip always lands on-canvas.
+    const inset = 14;
+    let [x, y] = p;
+    x = Math.max(inset, Math.min(width - inset, x));
+    y = Math.max(inset, Math.min(height - inset, y));
+
+    // Approx label size — JetBrains Mono at 10px bold caps.
+    const label = cfg.label.toUpperCase();
+    const padX = 9, padY = 5;
+    const textW = label.length * 6.8;
+    const boxW = textW + padX * 2;
+    const boxH = 20;
+
+    // Position the chip so its inner edge sits at (x,y) — anchor stays the
+    // visual origin of any arrows terminating here.
+    let bx, by;
+    switch (cfg.side) {
+      case 'left':  bx = x + 10;            by = y - boxH / 2; break;
+      case 'right': bx = x - 10 - boxW;     by = y - boxH / 2; break;
+      case 'top':   bx = x - boxW / 2;      by = y + 10;       break;
+      case 'bottom':bx = x - boxW / 2;      by = y - 10 - boxH;break;
+      default:      bx = x - boxW / 2;      by = y - boxH / 2;
+    }
+
+    const g = layer.append('g')
+      .attr('class', 'gateway')
+      .style('cursor', 'pointer')
+      .on('click', () => selectCountry(cfg.code));
+
+    // Anchor dot sits at the actual arrow origin.
+    g.append('circle')
+      .attr('class', 'gateway-dot-outer')
+      .attr('cx', x).attr('cy', y).attr('r', 4);
+    g.append('circle')
+      .attr('class', 'gateway-dot-inner')
+      .attr('cx', x).attr('cy', y).attr('r', 1.4);
+
+    // Chip background + label.
+    g.append('rect')
+      .attr('class', 'gateway-bg')
+      .attr('x', bx).attr('y', by)
+      .attr('width', boxW).attr('height', boxH)
+      .attr('rx', 2).attr('ry', 2);
+    g.append('text')
+      .attr('class', 'gateway-label')
+      .attr('x', bx + boxW / 2)
+      .attr('y', by + boxH / 2 + 3.5)
+      .attr('text-anchor', 'middle')
+      .text(label);
+  });
+}
+
+// ---------- Rail ----------
+function renderRail() {
+  if (state.selected) {
+    if (state.selected.type === 'arrow') return renderArrowDetail();
+    if (state.selected.type === 'country') return renderCountryDetail();
+  }
+  renderOffMap();
+}
+
+function typeIconSvg(type) {
+  const common = `stroke="#555" fill="none" stroke-width="1.8"`;
+  if (type === 'military') return `<svg viewBox="0 0 24 8"><line x1="1" y1="4" x2="22" y2="4" ${common}/></svg>`;
+  if (type === 'diplomatic') return `<svg viewBox="0 0 24 8"><line x1="1" y1="4" x2="22" y2="4" ${common} stroke-dasharray="4 3"/></svg>`;
+  if (type === 'financial') return `<svg viewBox="0 0 24 8"><line x1="1" y1="4" x2="22" y2="4" ${common} stroke-dasharray="1 3"/></svg>`;
+  if (type === 'trade') return `<svg viewBox="0 0 24 8"><line x1="1" y1="3" x2="22" y2="3" ${common}/><line x1="1" y1="6" x2="22" y2="6" ${common}/></svg>`;
+  if (type === 'illicit') return `<svg viewBox="0 0 24 8"><path d="M 1 4 Q 5 1 9 4 T 17 4 T 22 4" ${common}/></svg>`;
+  return '';
+}
+
+function renderOffMap() {
+  const mode = state.mode;
+  const modeData = DATA.modes[mode];
+  const offmap = DATA.offmap[mode];
+  const rail = document.getElementById('rail');
+  rail.innerHTML = `
+    <div class="rail-inner">
+      <div class="rail-section-title">Global / Off-Map Actors</div>
+      <div class="rail-desc">Powers acting on this conflict from outside the region shown. Click arrows or countries on the map for detail.</div>
+      ${offmap.map(a => {
+        const sideObj = modeData.sides.find(s => s.id === a.lean);
+        const dot = sideObj ? sideObj.color : '#999';
+        return `
+          <div class="actor-card">
+            <div class="actor-head">
+              <span class="actor-dot" style="background:${dot}"></span>
+              <span class="actor-name">${a.name}</span>
+            </div>
+            <div class="actor-posture">${a.posture}</div>
+            <div class="actor-types">${a.types.map(t => `<span class="type-chip">${typeIconSvg(t)}${t}</span>`).join('')}</div>
+          </div>
+        `;
+      }).join('')}
+      <div style="margin-top:22px; font-size:11px; color:var(--ink-3); line-height:1.55; font-family:'JetBrains Mono', monospace; letter-spacing:0.02em;">
+        Click any arrow on the map for actor-pair details and sources. Click a shaded country for profile and role in this conflict.
+      </div>
+    </div>
+  `;
+}
+
+function renderArrowDetail() {
+  const a = (DATA.arrows[state.mode] || []).find(x => x.id === state.selected.id);
+  if (!a) { state.selected = null; return renderRail(); }
+  const mode = DATA.modes[state.mode];
+  const sideObj = mode.sides.find(s => s.id === a.side);
+  const color = sideObj ? sideObj.color : '#666';
+  const rail = document.getElementById('rail');
+  rail.innerHTML = `
+    <div class="detail-panel">
+      <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
+      <div class="detail-kicker" style="color:${color}">Support flow · ${a.type}</div>
+      <div class="detail-title">${a.title}</div>
+      <div class="detail-meta">
+        <div class="meta-item"><div class="k">Type</div><div class="v" style="text-transform:capitalize">${a.type}</div></div>
+        <div class="meta-item"><div class="k">Intensity</div><div class="v">${['Minor','Significant','Major'][a.tier-1]}</div></div>
+        <div class="meta-item"><div class="k">Period</div><div class="v">${a.dates}</div></div>
+        <div class="meta-item"><div class="k">Backs</div><div class="v" style="color:${color}">${sideObj ? sideObj.label : ''}</div></div>
+      </div>
+      <div class="detail-summary">${a.summary}</div>
+      <div class="sources-title">Sources</div>
+      ${a.sources.map(s => `
+        <div class="source-item">
+          <span class="source-pub">${s.pub}</span>
+          <a href="${s.url}" target="_blank" rel="noopener">${s.head}</a>
+          <span class="source-date">${s.date}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderCountryDetail() {
+  const id = state.selected.id;
+  const c = DATA.countries[id];
+  if (!c) { state.selected = null; return renderRail(); }
+  const modeData = DATA.modes[state.mode];
+  let align = modeData.alignments[id];
+  if (!align) {
+    const subs = Object.keys(modeData.alignments).filter(k => k.startsWith(id + '_'));
+    if (subs.length) align = 'multiple';
+  }
+  let alignLabel = 'Neutral / limited role', alignColor = '#8A8A85';
+  if (align === 'contested') { alignLabel = 'Contested / ambiguous'; }
+  else if (align === 'multiple') { alignLabel = 'Multiple internal factions'; }
+  else if (align) {
+    const s = modeData.sides.find(x => x.id === align);
+    if (s) { alignLabel = 'Aligned: ' + s.label; alignColor = s.color; }
+  }
+  const role = c.roles ? c.roles[state.mode] : '';
+  const rail = document.getElementById('rail');
+  rail.innerHTML = `
+    <div class="detail-panel">
+      <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
+      <div class="detail-kicker">Country profile</div>
+      <div class="detail-title">${c.name}</div>
+      <div class="detail-meta">
+        <div class="meta-item"><div class="k">Capital</div><div class="v">${c.capital}</div></div>
+        <div class="meta-item"><div class="k">Population</div><div class="v">${c.pop}</div></div>
+        <div class="meta-item"><div class="k">GDP (nominal)</div><div class="v">${c.gdp}</div></div>
+        <div class="meta-item"><div class="k">GDP / capita</div><div class="v">${c.gdpPc}</div></div>
+        <div class="meta-item" style="grid-column:1/-1"><div class="k">Military spend</div><div class="v">${c.mil}</div></div>
+      </div>
+      <div class="detail-kicker" style="color:${alignColor}; margin-top:-6px;">${alignLabel}</div>
+      <div class="detail-summary">${role}</div>
+    </div>
+  `;
+}
+
+function selectArrow(id) { state.selected = { type:'arrow', id }; renderRail(); }
+function selectCountry(id) { state.selected = { type:'country', id }; renderRail(); }
+function clearSelection() { state.selected = null; renderRail(); }
+window.clearSelection = clearSelection;
+
+// ---------- Legend ----------
+function renderLegend() {
+  const legend = document.getElementById('legend');
+  const mode = DATA.modes[state.mode];
+  const sidesHtml = mode.sides.map(s => {
+    let sw;
+    if (s.id === 'ash') sw = `background: repeating-linear-gradient(45deg, ${s.color} 0 3px, transparent 3px 6px); background-color: #FAF8F3;`;
+    else if (s.id === 'neutral') sw = `background: ${s.color}; opacity: 0.5;`;
+    else sw = `background: ${s.color}; opacity: 0.55;`;
+    return `<span class="legend-swatch"><span class="sw" style="${sw}"></span>${s.label}</span>`;
+  }).join('');
+  const arrowLegend = `
+    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#444" stroke-width="2.2" fill="none"/></svg>military</span>
+    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#444" stroke-width="2.2" stroke-dasharray="4 3" fill="none"/></svg>diplomatic</span>
+    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#444" stroke-width="2.2" stroke-dasharray="1 3" fill="none"/></svg>financial</span>
+    <span class="legend-arrow"><svg viewBox="0 0 34 10"><line x1="1" y1="3.5" x2="32" y2="3.5" stroke="#444" stroke-width="1.3" fill="none"/><line x1="1" y1="6.5" x2="32" y2="6.5" stroke="#444" stroke-width="1.3" fill="none"/></svg>trade</span>
+    <span class="legend-arrow"><svg viewBox="0 0 34 10"><path d="M 1 5 Q 5 1 9 5 T 17 5 T 25 5 T 32 5" stroke="#444" stroke-width="1.7" fill="none"/></svg>illicit</span>
+  `;
+  const tiersHtml = `
+    <svg viewBox="0 0 70 10" width="70" height="10">
+      <line x1="2" y1="5" x2="20" y2="5" stroke="#444" stroke-width="1.6"/>
+      <line x1="26" y1="5" x2="44" y2="5" stroke="#444" stroke-width="2.8"/>
+      <line x1="50" y1="5" x2="68" y2="5" stroke="#444" stroke-width="4.2"/>
+    </svg>
+    <span>minor · significant · major</span>
+  `;
+  legend.innerHTML = `
+    <div class="legend-group">${sidesHtml}</div>
+    <div class="legend-arrows">${arrowLegend}<span class="legend-tiers">${tiersHtml}</span></div>
+    <div class="footer-note">For analytical illustration · Sources in detail panels</div>
+  `;
+}
+
+// ---------- Init ----------
+document.querySelectorAll('#modeToggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    state.mode = b.dataset.mode;
+    state.selected = null;
+    if (state.world) render();
+  });
+});
+window.addEventListener('resize', () => {
+  if (!state.world) return;
+  svg.selectAll('*').remove();
+  initSvg();
+  render();
+});
+loadMap();
+
+</script>
+</body>
+</html>

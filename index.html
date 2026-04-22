@@ -1856,11 +1856,11 @@ function arrowStyle(type) {
     default:           return { dash: null, double: false, wavy: false };
   }
 }
-function tierWidth(tier) { return { 1: 2.1, 2: 3.6, 3: 5.2 }[tier] || 2.4; }
+function tierWidth(tier) { return { 1: 5.0, 2: 8.5, 3: 12.0 }[tier] || 6.0; }
 // Zoom-dependent arrow width multiplier: 1.0x at the default view, growing
-// gradually to ~1.8x at max zoom so arrows remain readable when the map is
+// gradually to ~2.5x at max zoom so arrows remain readable when the map is
 // zoomed in and the empty land space around them expands.
-function arrowWidthMul(k) { return Math.min(1.85, 1 + 0.14 * (k - 1)); }
+function arrowWidthMul(k) { return Math.min(2.5, 1 + 0.2 * (k - 1)); }
 
 // De-collide city / port / secondary labels in screen-pixel space. Called
 // from updateZoomLayers on every zoom tick. Labels live in projected coords

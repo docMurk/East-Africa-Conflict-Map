@@ -335,16 +335,20 @@ Tigray.
 - HRW, "We Will Erase You", Apr 2022.
 - Pretoria Cessation of Hostilities Agreement, 2 Nov 2022.
 
-**Eritrea → TPLF / Debretsion faction — military (alleged)** — *proposed
-new arrow `eri-tplf`, tier 2, 2024–2026, flagged "alleged / reported".*
+**Eritrea → TPLF / Debretsion faction — military** — arrow `eri-tplf`,
+tier 2, 2024–2026. *As of Apr 2026 the map tints Eritrea with the new
+`tplf-leaning` side — TPLF yellow with a gray contested-stripe overlay
+(the same hatch Chad wears in Sudan mode) to mark the hedged posture.*
 Post-2023 TPLF split between Getachew Reda (Addis-aligned) and
-Debretsion Gebremichael (Asmara-leaning); reports of Eritrean
-logistical and communications support to Debretsion wing as Asmara
+Debretsion Gebremichael (Asmara-leaning); Eritrean logistical and
+communications support to the Debretsion wing has grown as Asmara
 hedges against a post-Abiy Ethiopia.
 - International Crisis Group, "Ethiopia and Eritrea on a collision
   course", 2025.
 - Addis Standard reporting on Tigray intra-party split, 2024.
 - Africa Confidential, "Asmara's Tigray play", 2025.
+- Christian Science Monitor, "Ethiopia–Eritrea conflict", 2 Apr 2026,
+  <https://www.csmonitor.com/World/Africa/2026/0402/Ethiopia-Eritrea-conflict>.
 
 **Eritrea → Fano (Amhara militia) — military (alleged)** — *proposed new
 arrow `eri-fano`, tier 1, 2024–present, flagged "alleged".*
@@ -785,9 +789,10 @@ Arrow line numbers below reference `index.html` as of commit `3ac8b5a`.
   USAID Tigray food-aid pause May 2023 and 2025 cuts.
 - **UPDATE `cn-fed`** (line 874) — keep tier 3. Add Wing Loong I
   deliveries Sep 2021 and G20 Common Framework debt restructuring 2024.
-- **ADD `eri-tplf`** — from `ERI` to `ETH_TPLF`, side `tplf`, type
-  `military`, tier 2, dates "2024–2026", flagged "alleged / reported".
-  Eritrea–Debretsion axis.
+- **ADD `eri-tplf`** — from `ERI` to `ETH_TIGRAY`, side `tplf-leaning`,
+  type `military`, tier 2, dates "2024–2026". Eritrea–Debretsion axis;
+  country also tinted with the `tplf-leaning` stripe overlay to flag
+  the hedged posture (added Apr 2026 after CSM reporting).
 - **ADD `eri-fano`** — from `ERI` to `ETH_UNREST`, side `unrest`, type
   `military`, tier 1, dates "2024–present", flagged "alleged". Sawa
   training reports.

@@ -75,8 +75,8 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 .sea-bg { fill: var(--water); }
 .land { fill: var(--land); stroke: none; }
 .context-land { fill: var(--land-2); stroke: none; }
-.border { fill: none; stroke: var(--line-2); stroke-width: 0.5px; stroke-linejoin: round; }
-.border-inner { fill: none; stroke: #B8B2A0; stroke-width: 0.45px; stroke-dasharray: 2 2; }
+.border { fill: none; stroke: #5C564A; stroke-width: 0.95px; stroke-linejoin: round; }
+.border-inner { fill: none; stroke: #7A7263; stroke-width: 0.6px; stroke-dasharray: 2 2; }
 .coast { fill: none; stroke: #A9B9C2; stroke-width: 0.6px; }
 .river { fill: none; stroke: #A6BDCB; stroke-width: 1.1px; opacity: 0.85; stroke-linecap: round; }
 .river.river-sm { stroke-width: 0.8px; opacity: 0.75; }
@@ -94,6 +94,7 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 #mapRoot .graticule,
 #mapRoot .tint,
 #mapRoot .city-ring,
+#mapRoot .arrow-origin,
 #mapRoot .arrow,
 #mapRoot .arrow-halo,
 #mapRoot .port-marker,
@@ -274,6 +275,19 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 }
 .meta-item .v { font-size: 13px; font-weight: 500; }
 .detail-summary { font-size: 13px; line-height: 1.6; color: var(--ink); margin-bottom: 18px; }
+.cross-modes { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 6px; }
+.cross-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 10px; white-space: nowrap;
+}
+.cross-row { padding: 10px 0; border-top: 1px dashed var(--line); }
+.cross-row:first-of-type { border-top: none; padding-top: 0; }
+.cross-label { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+.cross-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; opacity: 0.85; }
+.cross-mode { font-size: 11px; font-weight: 600; color: var(--ink-2); }
+.cross-side { font-size: 12.5px; font-weight: 500; margin-bottom: 4px; }
+.cross-role { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
 .sources-title {
   font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--ink-3); font-family: 'JetBrains Mono', monospace; margin: 0 0 10px 0;
@@ -1165,8 +1179,17 @@ window.CONFLICT_DATA = {
 // Main app: d3 + TopoJSON base map, per-mode overlays + arrows.
 const DATA = window.CONFLICT_DATA;
 
+// URL params supported for deep-linking and verification:
+//   ?mode=sudan|ethiopia|somalia
+//   ?focus=lon,lat,zoom   — centers the map on (lon, lat) at the given zoom
+//   ?select=ISO           — auto-opens the country profile panel for ISO
+const _params = new URLSearchParams(location.search);
+const _focus = _params.get('focus');
+const _select = _params.get('select');
 const state = {
-  mode: (new URLSearchParams(location.search).get('mode')) || localStorage.getItem('conflict_mode') || 'sudan',
+  mode: _params.get('mode') || localStorage.getItem('conflict_mode') || 'sudan',
+  initialFocus: _focus ? _focus.split(',').map(parseFloat) : null,
+  initialSelect: _select || null,
   selected: null,
   world: null,
   countriesById: {},   // ISO-N3 -> feature
@@ -1204,6 +1227,84 @@ const LABEL_COUNTRIES = new Set([
 ]);
 
 // ---------- City data ----------
+// Approximate metro population for each city / port marker. Pre-war figures
+// are noted where the current population is heavily displaced (Sudan 2023+).
+// Sources: UN DESA World Urbanization Prospects 2024, city statistical offices,
+// Demographia World Urban Areas 2024.
+const CITY_POP = {
+  // Primary cities
+  "Khartoum": "~5.3M metro (pre-war; largely displaced)",
+  "Port Sudan": "~700K (plus ~1M displaced, 2024)",
+  "El Fasher": "~500K (pre-siege)",
+  "Addis Ababa": "~5.2M metro",
+  "Mekelle": "~500K",
+  "Mogadishu": "~2.8M metro",
+  "Hargeisa": "~1.2M",
+  "Bosaso": "~700K (incl. IDPs)",
+  "Asmara": "~900K",
+  "Djibouti": "~600K (~70% of national pop)",
+  "Nairobi": "~5.3M metro",
+  "Cairo": "~22M metro",
+  "Abu Dhabi": "~1.5M",
+  "Doha": "~2.4M metro",
+  "Ankara": "~5.7M metro",
+  "Tehran": "~9.5M city / ~15M metro",
+  "N'Djamena": "~1.6M",
+  "Riyadh": "~7.6M",
+  "Sana'a": "~3.0M",
+  "Juba": "~500K",
+  "Muscat": "~1.5M metro",
+  "Berbera": "~240K",
+  "Jeddah": "~4.7M",
+  "Aden": "~1.0M",
+  "Benghazi": "~750K",
+  // Secondary cities
+  "Aswan": "~400K",
+  "Dongola": "~25K",
+  "Atbara": "~110K",
+  "Kassala": "~500K",
+  "Gedaref": "~320K",
+  "Wad Madani": "~340K",
+  "El Obeid": "~400K",
+  "Kosti": "~180K",
+  "Nyala": "~600K",
+  "Geneina": "~170K",
+  "Zalingei": "~60K",
+  "Bahir Dar": "~450K",
+  "Gondar": "~400K",
+  "Dire Dawa": "~500K",
+  "Hawassa": "~380K",
+  "Jimma": "~230K",
+  "Dessie": "~220K",
+  "Gambela": "~45K",
+  "Assab": "~75K",
+  "Massawa": "~50K",
+  "Garowe": "~60K",
+  "Kismayo": "~230K",
+  "Baidoa": "~130K (incl. major IDP camps)",
+  "Beledweyne": "~100K",
+  "Dhusamareb": "~55K",
+  "Merca": "~95K",
+  "Burao": "~280K",
+  "Mombasa": "~1.2M",
+  "Lodwar": "~45K",
+  "Mandera": "~90K",
+  "Wau": "~150K",
+  "Malakal": "~150K",
+  "Bor": "~120K",
+  "Al-Hudaydah": "~700K",
+  "Al Mukalla": "~300K",
+  "Tobruk": "~150K",
+  "Sabha": "~130K",
+  "Alexandria": "~5.5M metro",
+  "Dammam": "~1.2M",
+  "Dubai": "~3.6M city / ~4.0M metro",
+  "Bandar Abbas": "~700K",
+  "Istanbul": "~15.6M metro",
+  "Sarh": "~100K",
+  "Abéché": "~80K",
+};
+
 const CITIES = [
   { name: "Khartoum", lat: 15.5007, lon: 32.5599, capital: true, country: "SDN" },
   { name: "Port Sudan", lat: 19.6158, lon: 37.2164, country: "SDN" },
@@ -1386,9 +1487,12 @@ const ANCHORS = {
   ERI: [39, 15.5], DJI: [43, 11.6], SSD: [31, 7], YEM: [47, 15.5],
   OMN: [56, 21], LBY: [17, 27], LBY_LNA: [21, 27],
   // Off-map anchors (outside focus region → drawn at edge)
-  USA_OFFMAP: [-9, 30],       // enters from west
-  CHN_OFFMAP: [66, 32],       // enters from east
-  RUS_OFFMAP: [40, 48],       // enters from north
+  // Off-map anchors sit well outside the fitSize'd focus bbox (lon 15..60,
+  // lat -10..47) so the arrow line enters the viewport cleanly at the frame
+  // edge rather than appearing to originate from a visible country inside.
+  USA_OFFMAP: [-15, 32],      // far west, Atlantic
+  CHN_OFFMAP: [75, 34],       // far east, past Pakistan
+  RUS_OFFMAP: [40, 55],       // far north, deep into Russia
 };
 
 // Off-map "gateway" labels: where an external actor's arrows enter the map.
@@ -1419,7 +1523,77 @@ function arrowStyle(type) {
     default:           return { dash: null, double: false, wavy: false };
   }
 }
-function tierWidth(tier) { return { 1: 1.6, 2: 2.8, 3: 4.2 }[tier] || 2; }
+function tierWidth(tier) { return { 1: 2.1, 2: 3.6, 3: 5.2 }[tier] || 2.4; }
+// Zoom-dependent arrow width multiplier: 1.0x at the default view, growing
+// gradually to ~1.8x at max zoom so arrows remain readable when the map is
+// zoomed in and the empty land space around them expands.
+function arrowWidthMul(k) { return Math.min(1.85, 1 + 0.14 * (k - 1)); }
+
+// De-collide city / port / secondary labels in screen-pixel space. Called
+// from updateZoomLayers on every zoom tick. Labels live in projected coords
+// inside #mapRoot, which scales by k — so 1 screen-pixel of vertical push
+// equals (1/k) projected-units added to the text's `y` attribute.
+//
+// Priority order (higher priority stays put; lower priority gets pushed):
+//   1. Capital cities  2. Regular cities  3. Ports  4. Secondary cities
+// Labels are also first reset to their original y each tick so pushes from
+// one zoom level don't accumulate at the next.
+function decollideCityLabels(k) {
+  const groups = [
+    svg.selectAll('.city-primary text.city-label.capital').nodes(),
+    svg.selectAll('.city-primary text.city-label:not(.capital)').nodes(),
+    svg.selectAll('.port-layer text.port-label').nodes(),
+    svg.selectAll('.city-secondary text.city-label').nodes(),
+  ];
+  const all = groups.flat();
+  // Seed base y — store original y (projected coords) on first encounter.
+  all.forEach(el => {
+    if (!el.hasAttribute('data-base-y')) el.setAttribute('data-base-y', el.getAttribute('y') || '0');
+    el.setAttribute('y', el.getAttribute('data-base-y'));
+    el.style.display = '';
+  });
+  // Iterative nudge — walk pairs, push the lower-priority element vertically
+  // by the overlap amount (converted from screen-px to projected units via k).
+  for (let iter = 0; iter < 6; iter++) {
+    const rects = all.map(el => ({ el, r: el.getBoundingClientRect() }));
+    let moved = false;
+    for (let i = 0; i < rects.length; i++) {
+      for (let j = i + 1; j < rects.length; j++) {
+        const a = rects[i].r, b = rects[j].r;
+        if (a.right <= b.left || a.left >= b.right) continue;
+        if (a.bottom <= b.top || a.top >= b.bottom) continue;
+        // Overlap — push the lower-priority one. Priority = group index of
+        // each element (groups array is in priority order).
+        const ga = groups.findIndex(g => g.includes(rects[i].el));
+        const gb = groups.findIndex(g => g.includes(rects[j].el));
+        const loserIdx = gb > ga ? j : (ga > gb ? i : (a.top < b.top ? j : i));
+        const target = rects[loserIdx].el;
+        const other = loserIdx === i ? rects[j].r : rects[i].r;
+        // Push vertically by overlap + 2px, direction = away from the other.
+        const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + 2;
+        const dir = rects[loserIdx].r.top < other.top ? -1 : 1;
+        const curY = +target.getAttribute('y');
+        target.setAttribute('y', curY + dir * overlap / k);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  // At high zoom, if a secondary label still overlaps anything after the
+  // iterative push, hide it — the city dot still shows, just not its name.
+  if (k >= 3) {
+    const secondary = groups[3];
+    const rects = all.map(el => ({ el, r: el.getBoundingClientRect() }));
+    secondary.forEach(el => {
+      const rec = rects.find(r => r.el === el);
+      if (!rec) return;
+      const overlaps = rects.some(other => other.el !== el &&
+        !(rec.r.right <= other.r.left || rec.r.left >= other.r.right ||
+          rec.r.bottom <= other.r.top || rec.r.top >= other.r.bottom));
+      if (overlaps) el.style.display = 'none';
+    });
+  }
+}
 
 // ---------- Load map ----------
 let projection, pathGen, svg, width = 1000, height = 700;
@@ -1591,6 +1765,35 @@ function initSvg() {
   state.zoom = zoomBehavior;
   // Start at identity — kick off one update so counter-scaled strokes are right.
   updateZoomLayers(1);
+
+  // If ?focus=lon,lat,zoom was passed, apply a matching zoom transform after
+  // layout so screenshots / deep-links can target specific regions. We
+  // compute the transform algebraically: d3.zoom's transform T applies
+  //   x' = T.k * projX + T.x   (and similarly for y)
+  // so to place the projected point (px, py) at the viewport center we need
+  //   T.x = width/2 - T.k * px; T.y = height/2 - T.k * py.
+  if (state.initialSelect) {
+    if (DATA.countries[state.initialSelect]) {
+      state.selected = { type: 'country', id: state.initialSelect };
+    } else {
+      // City name fallback — try primary, secondary, then ports.
+      const found = CITIES.find(c => c.name === state.initialSelect) ||
+                    SECONDARY_CITIES.find(c => c.name === state.initialSelect) ||
+                    PORTS.find(p => p.name === state.initialSelect);
+      if (found) state.selected = { type: 'city', id: state.initialSelect };
+    }
+    if (state.selected) renderRail();
+  }
+  if (state.initialFocus && state.initialFocus.length === 3) {
+    const [lon, lat, k] = state.initialFocus;
+    const p = projection([lon, lat]);
+    if (p && isFinite(p[0])) {
+      const t = d3.zoomIdentity
+        .translate(width / 2 - k * p[0], height / 2 - k * p[1])
+        .scale(k);
+      svg.call(zoomBehavior.transform, t);
+    }
+  }
 }
 
 // Show/hide zoom-dependent layers AND counter-scale line widths + label sizes
@@ -1607,6 +1810,33 @@ function updateZoomLayers(k) {
   svg.select('.base-layer').style('display', showPortsAndBases ? null : 'none');
   svg.select('.geo-z2').style('display', showGeoZ2 ? null : 'none');
   svg.select('.river-secondary').style('display', showGeoZ2 ? null : 'none');
+
+  // Arrow widths scale with zoom: constant at default (k=1), growing toward
+  // ~1.85x at max zoom so strokes remain readable when the map is zoomed in.
+  // Origin dots scale similarly to match their arrows' weight.
+  const mul = arrowWidthMul(k);
+  svg.selectAll('.arrow[data-base-w]').each(function() {
+    const base = +this.getAttribute('data-base-w');
+    if (isFinite(base)) this.setAttribute('stroke-width', base * mul);
+  });
+  // Counter-scale the origin dot radius by k so it stays a constant visual
+  // pixel size regardless of zoom. Without this, the dots grow proportional
+  // to k and swallow a quarter of the map at max zoom.
+  svg.selectAll('.arrow-origin[data-base-r]').each(function() {
+    const base = +this.getAttribute('data-base-r');
+    if (isFinite(base)) {
+      this.setAttribute('r', (base * mul) / k);
+      this.setAttribute('stroke-width', 0.9 / k);
+    }
+  });
+
+  // City + port label de-collision. Labels are positioned in projected coords
+  // and sit inside #mapRoot (which scales by k). Text itself is counter-scaled
+  // via CSS so it stays 10px regardless of zoom, but adjacent cities can still
+  // stack on top of each other — especially in the Djibouti cluster at max
+  // zoom. Approach: reset each label to its base position, then iteratively
+  // push overlapping pairs apart along the vertical axis in screen-px.
+  decollideCityLabels(k);
 
   // Counter-scale: keep line weights and text visually constant as k grows.
   // We use vector-effect: non-scaling-stroke via a CSS var on mapRoot, and
@@ -1862,21 +2092,33 @@ function renderCities() {
   const layer = svg.select('#cityLayer');
   layer.selectAll('*').remove();
 
+  // Bind a cursor+click handler on every city / port element so the user
+  // can open the city detail panel. The click hit-area is the city circle
+  // AND its label; both share the city's `name` so the rail can look up
+  // population and country context from CITY_POP.
+  const bindCityClick = (selection, name) => {
+    selection
+      .style('cursor', 'pointer')
+      .on('click', (ev) => { ev.stopPropagation(); selectCity(name); });
+  };
+
   // Primary cities — always visible.
   const primary = layer.append('g').attr('class', 'city-primary');
   CITIES.forEach(c => {
     const [x, y] = projection([c.lon, c.lat]);
     if (!isFinite(x)) return;
+    const cityGroup = primary.append('g').attr('class', 'city-hit');
     if (c.capital) {
-      primary.append('circle').attr('cx', x).attr('cy', y).attr('r', 3.2).attr('class', 'city-ring');
-      primary.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot');
+      cityGroup.append('circle').attr('cx', x).attr('cy', y).attr('r', 3.2).attr('class', 'city-ring');
+      cityGroup.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot');
     } else {
-      primary.append('circle').attr('cx', x).attr('cy', y).attr('r', 2).attr('class', 'city-dot');
+      cityGroup.append('circle').attr('cx', x).attr('cy', y).attr('r', 2).attr('class', 'city-dot');
     }
-    primary.append('text')
+    cityGroup.append('text')
       .attr('x', x + 6).attr('y', y + 3.5)
       .attr('class', 'city-label' + (c.capital ? ' capital' : ''))
       .text(c.name);
+    bindCityClick(cityGroup, c.name);
   });
 
   // Secondary cities — shown at zoom ≥ 2.5.
@@ -1884,25 +2126,31 @@ function renderCities() {
   SECONDARY_CITIES.forEach(c => {
     const [x, y] = projection([c.lon, c.lat]);
     if (!isFinite(x)) return;
-    secondary.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot secondary');
-    secondary.append('text')
+    const g = secondary.append('g').attr('class', 'city-hit');
+    g.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot secondary');
+    g.append('text')
       .attr('x', x + 5).attr('y', y + 3)
       .attr('class', 'city-label secondary')
       .text(c.name);
+    bindCityClick(g, c.name);
   });
 
-  // Ports — shown at zoom ≥ 3.0. Square marker.
+  // Ports — shown at zoom ≥ 3.0. Square marker. Click surfaces the port /
+  // city detail panel the same way a city dot does; a port's population
+  // falls back to its host city when the port itself isn't in CITY_POP.
   const ports = layer.append('g').attr('class', 'port-layer').style('display', 'none');
   PORTS.forEach(p => {
     const [x, y] = projection([p.lon, p.lat]);
     if (!isFinite(x)) return;
-    ports.append('rect')
+    const g = ports.append('g').attr('class', 'city-hit');
+    g.append('rect')
       .attr('x', x - 2.6).attr('y', y - 2.6).attr('width', 5.2).attr('height', 5.2)
       .attr('class', 'port-marker');
-    ports.append('text')
+    g.append('text')
       .attr('x', x + 6).attr('y', y + 3)
       .attr('class', 'port-label')
       .text(p.name);
+    bindCityClick(g, p.name);
   });
 
   // Foreign bases — shown at zoom ≥ 3.0. Chevron-ish marker color-coded by flag.
@@ -2257,21 +2505,37 @@ function renderArrows() {
 
     if (style.double) {
       // Double line effect: thick color + white inner
-      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w + 2.2).attr('fill','none').attr('opacity', 0.9).attr('class','arrow').style('pointer-events','stroke').style('cursor','pointer').on('click', () => selectArrow(a.id));
-      layer.append('path').attr('d', d).attr('stroke', '#FAF8F3').attr('stroke-width', Math.max(0.8, w - 0.8)).attr('fill','none').attr('class','arrow').style('pointer-events','none');
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w + 2.2).attr('data-base-w', w + 2.2).attr('fill','none').attr('opacity', 0.9).attr('class','arrow').style('pointer-events','stroke').style('cursor','pointer').on('click', () => selectArrow(a.id));
+      layer.append('path').attr('d', d).attr('stroke', '#FAF8F3').attr('stroke-width', Math.max(0.8, w - 0.8)).attr('data-base-w', Math.max(0.8, w - 0.8)).attr('fill','none').attr('class','arrow').style('pointer-events','none');
       // head
-      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('fill','none').attr('class','arrow').attr('marker-end', headMarker).attr('opacity', 0).style('pointer-events','none');
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w).attr('fill','none').attr('class','arrow').attr('marker-end', headMarker).attr('opacity', 0).style('pointer-events','none');
     } else {
       const p = layer.append('path')
         .attr('d', d)
         .attr('class', 'arrow')
-        .attr('stroke', color).attr('stroke-width', w)
+        .attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w)
         .attr('fill', 'none').attr('stroke-linecap', 'round')
         .attr('opacity', 0.88)
         .attr('marker-end', headMarker)
         .style('pointer-events','stroke').style('cursor','pointer')
         .on('click', () => selectArrow(a.id));
       if (style.dash) p.attr('stroke-dasharray', style.dash);
+    }
+
+    // Origination dot at the arrow's starting anchor — only for arrows that
+    // start from a real on-map country, not the off-map gateways (whose
+    // arrows should appear to enter from outside the frame, without a dot).
+    if (!GATEWAYS[a.from]) {
+      layer.append('circle')
+        .attr('class', 'arrow-origin')
+        .attr('cx', fromP[0]).attr('cy', fromP[1])
+        .attr('r', Math.max(2.6, w * 0.9))
+        .attr('data-base-r', Math.max(2.6, w * 0.9))
+        .attr('fill', color)
+        .attr('stroke', '#FAF8F3')
+        .attr('stroke-width', 0.9)
+        .attr('opacity', 0.95)
+        .style('pointer-events', 'none');
     }
   });
 }
@@ -2327,13 +2591,9 @@ function renderOffMapGateways() {
       .style('cursor', 'pointer')
       .on('click', () => selectCountry(cfg.code));
 
-    // Anchor dot sits at the actual arrow origin.
-    g.append('circle')
-      .attr('class', 'gateway-dot-outer')
-      .attr('cx', x).attr('cy', y).attr('r', 4);
-    g.append('circle')
-      .attr('class', 'gateway-dot-inner')
-      .attr('cx', x).attr('cy', y).attr('r', 1.4);
+    // No anchor dot: off-map arrows arrive from off-screen, so the only
+    // visual at the entry point should be the label chip itself. The arrow
+    // line emerges from behind the chip.
 
     // Chip background + label.
     g.append('rect')
@@ -2355,6 +2615,7 @@ function renderRail() {
   if (state.selected) {
     if (state.selected.type === 'arrow') return renderArrowDetail();
     if (state.selected.type === 'country') return renderCountryDetail();
+    if (state.selected.type === 'city') return renderCityDetail();
   }
   renderOffMap();
 }
@@ -2430,24 +2691,50 @@ function renderArrowDetail() {
   `;
 }
 
+// Per-mode alignment label for a given country iso and mode id. Used both
+// by the main country detail block and by the cross-mode "other conflicts"
+// card. Returns { label, color } — color comes from the mode's sides list.
+function alignmentSummary(iso, modeId) {
+  const modeData = DATA.modes[modeId];
+  if (!modeData) return { label: '—', color: '#8A8A85' };
+  let align = modeData.alignments[iso];
+  if (!align) {
+    // Admin-1 CONTROL entries: if the country has sub-regions tagged, say so.
+    const c = DATA.control && DATA.control[modeId];
+    if (c && c[iso]) align = 'multiple';
+  }
+  if (!align) return { label: 'No significant role', color: '#8A8A85' };
+  if (align === 'contested') return { label: 'Contested / ambiguous', color: '#8A857A' };
+  if (align === 'multiple') return { label: 'Internal factions (see map)', color: '#555' };
+  const s = modeData.sides.find(x => x.id === align);
+  return s ? { label: s.label, color: s.color } : { label: align, color: '#555' };
+}
+
 function renderCountryDetail() {
   const id = state.selected.id;
   const c = DATA.countries[id];
   if (!c) { state.selected = null; return renderRail(); }
-  const modeData = DATA.modes[state.mode];
-  let align = modeData.alignments[id];
-  if (!align) {
-    const subs = Object.keys(modeData.alignments).filter(k => k.startsWith(id + '_'));
-    if (subs.length) align = 'multiple';
-  }
-  let alignLabel = 'Neutral / limited role', alignColor = '#8A8A85';
-  if (align === 'contested') { alignLabel = 'Contested / ambiguous'; }
-  else if (align === 'multiple') { alignLabel = 'Multiple internal factions'; }
-  else if (align) {
-    const s = modeData.sides.find(x => x.id === align);
-    if (s) { alignLabel = 'Aligned: ' + s.label; alignColor = s.color; }
-  }
+
+  const here = alignmentSummary(id, state.mode);
   const role = c.roles ? c.roles[state.mode] : '';
+
+  // Cross-mode card: every mode other than the currently selected one.
+  const otherModes = Object.keys(DATA.modes).filter(m => m !== state.mode);
+  const otherCardsHtml = otherModes.map(m => {
+    const modeTitle = DATA.modes[m].title;
+    const s = alignmentSummary(id, m);
+    const otherRole = c.roles && c.roles[m] ? c.roles[m] : '';
+    return `
+      <div class="cross-row">
+        <div class="cross-label">
+          <span class="cross-dot" style="background:${s.color}"></span>
+          <span class="cross-mode">${modeTitle}</span>
+        </div>
+        <div class="cross-side" style="color:${s.color}">${s.label}</div>
+        ${otherRole ? `<div class="cross-role">${otherRole}</div>` : ''}
+      </div>`;
+  }).join('');
+
   const rail = document.getElementById('rail');
   rail.innerHTML = `
     <div class="detail-panel">
@@ -2461,16 +2748,49 @@ function renderCountryDetail() {
         <div class="meta-item"><div class="k">GDP / capita</div><div class="v">${c.gdpPc}</div></div>
         <div class="meta-item" style="grid-column:1/-1"><div class="k">Military spend</div><div class="v">${c.mil}</div></div>
       </div>
-      <div class="detail-kicker" style="color:${alignColor}; margin-top:-6px;">${alignLabel}</div>
+      <div class="detail-kicker" style="color:${here.color}; margin-top:-6px;">${here.label}</div>
       <div class="detail-summary">${role}</div>
+      <div class="cross-modes">
+        <div class="cross-title">Role in other conflicts</div>
+        ${otherCardsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderCityDetail() {
+  const name = state.selected.id;
+  const entry = CITIES.find(c => c.name === name) ||
+                SECONDARY_CITIES.find(c => c.name === name) ||
+                PORTS.find(p => p.name === name);
+  if (!entry) { state.selected = null; return renderRail(); }
+  const pop = CITY_POP[name] || 'Population not recorded';
+  const countryIso = entry.country && entry.country.split('_')[0];
+  const country = countryIso && DATA.countries[countryIso];
+  const countryLine = country ? country.name : (entry.country || '');
+  const isCapital = !!entry.capital;
+  const rail = document.getElementById('rail');
+  rail.innerHTML = `
+    <div class="detail-panel">
+      <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
+      <div class="detail-kicker">${isCapital ? 'Capital city' : 'City'}</div>
+      <div class="detail-title">${name}</div>
+      <div class="detail-meta">
+        <div class="meta-item"><div class="k">Country</div><div class="v">${countryLine}</div></div>
+        <div class="meta-item"><div class="k">Population</div><div class="v">${pop}</div></div>
+      </div>
+      ${countryIso ? `<button class="back-btn" style="margin-top:4px" onclick="selectCountry('${countryIso}')">See ${country ? country.name : countryIso} country profile &rarr;</button>` : ''}
     </div>
   `;
 }
 
 function selectArrow(id) { state.selected = { type:'arrow', id }; renderRail(); }
 function selectCountry(id) { state.selected = { type:'country', id }; renderRail(); }
+function selectCity(name) { state.selected = { type:'city', id: name }; renderRail(); }
 function clearSelection() { state.selected = null; renderRail(); }
 window.clearSelection = clearSelection;
+window.selectCountry = selectCountry;
+window.selectCity = selectCity;
 
 // ---------- Legend ----------
 function renderLegend() {

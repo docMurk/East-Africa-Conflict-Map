@@ -1539,6 +1539,9 @@ function arrowWidthMul(k) { return Math.min(1.85, 1 + 0.14 * (k - 1)); }
 // Labels are also first reset to their original y each tick so pushes from
 // one zoom level don't accumulate at the next.
 function decollideCityLabels(k) {
+  // Movable labels: each group is one priority tier. Only city and port
+  // labels move — the base labels belong to the cluster-splay system above
+  // and are treated as fixed obstacles instead.
   const groups = [
     svg.selectAll('.city-primary text.city-label.capital').nodes(),
     svg.selectAll('.city-primary text.city-label:not(.capital)').nodes(),
@@ -1552,45 +1555,66 @@ function decollideCityLabels(k) {
     el.setAttribute('y', el.getAttribute('data-base-y'));
     el.style.display = '';
   });
-  // Iterative nudge — walk pairs, push the lower-priority element vertically
-  // by the overlap amount (converted from screen-px to projected units via k).
+
+  // Fixed obstacles: base / cluster labels (Djibouti cluster, solo bases).
+  // City and port labels must avoid these; the obstacle labels don't move.
+  const obstacles = svg.selectAll('.base-layer text.base-label').nodes();
+  const obstacleRects = () => obstacles.map(el => el.getBoundingClientRect());
+
+  const overlap = (a, b) =>
+    !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+
+  // Iterative nudge: walk pairs plus each movable label vs every obstacle.
+  // Overlap resolved by pushing the lower-priority element (or, for an
+  // obstacle, always the movable label) vertically by the overlap amount
+  // converted from screen-px to projected units via /k.
   for (let iter = 0; iter < 6; iter++) {
     const rects = all.map(el => ({ el, r: el.getBoundingClientRect() }));
+    const obs = obstacleRects();
     let moved = false;
+    // movable-vs-movable
     for (let i = 0; i < rects.length; i++) {
       for (let j = i + 1; j < rects.length; j++) {
         const a = rects[i].r, b = rects[j].r;
-        if (a.right <= b.left || a.left >= b.right) continue;
-        if (a.bottom <= b.top || a.top >= b.bottom) continue;
-        // Overlap — push the lower-priority one. Priority = group index of
-        // each element (groups array is in priority order).
+        if (!overlap(a, b)) continue;
         const ga = groups.findIndex(g => g.includes(rects[i].el));
         const gb = groups.findIndex(g => g.includes(rects[j].el));
         const loserIdx = gb > ga ? j : (ga > gb ? i : (a.top < b.top ? j : i));
         const target = rects[loserIdx].el;
         const other = loserIdx === i ? rects[j].r : rects[i].r;
-        // Push vertically by overlap + 2px, direction = away from the other.
-        const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + 2;
+        const ov = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + 2;
         const dir = rects[loserIdx].r.top < other.top ? -1 : 1;
-        const curY = +target.getAttribute('y');
-        target.setAttribute('y', curY + dir * overlap / k);
+        target.setAttribute('y', (+target.getAttribute('y')) + dir * ov / k);
+        moved = true;
+      }
+    }
+    // movable-vs-obstacle
+    for (let i = 0; i < rects.length; i++) {
+      for (let o = 0; o < obs.length; o++) {
+        const a = rects[i].r, b = obs[o];
+        if (!overlap(a, b)) continue;
+        const target = rects[i].el;
+        const ov = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + 2;
+        const dir = a.top < b.top ? -1 : 1;
+        target.setAttribute('y', (+target.getAttribute('y')) + dir * ov / k);
         moved = true;
       }
     }
     if (!moved) break;
   }
-  // At high zoom, if a secondary label still overlaps anything after the
-  // iterative push, hide it — the city dot still shows, just not its name.
+
+  // Last resort at high zoom: hide any secondary-city label still overlapping
+  // anything after nudging. Its dot stays, just the name drops out.
   if (k >= 3) {
     const secondary = groups[3];
-    const rects = all.map(el => ({ el, r: el.getBoundingClientRect() }));
+    const finalRects = all.map(el => ({ el, r: el.getBoundingClientRect() }));
+    const obs = obstacleRects();
     secondary.forEach(el => {
-      const rec = rects.find(r => r.el === el);
+      const rec = finalRects.find(r => r.el === el);
       if (!rec) return;
-      const overlaps = rects.some(other => other.el !== el &&
-        !(rec.r.right <= other.r.left || rec.r.left >= other.r.right ||
-          rec.r.bottom <= other.r.top || rec.r.top >= other.r.bottom));
-      if (overlaps) el.style.display = 'none';
+      const clash = finalRects.some(o => o.el !== el && overlap(rec.r, o.r)) ||
+                    obs.some(ob => overlap(rec.r, ob));
+      if (clash) el.style.display = 'none';
     });
   }
 }
@@ -1808,6 +1832,10 @@ function updateZoomLayers(k) {
   svg.select('.city-secondary').style('display', showSecondaryCities ? null : 'none');
   svg.select('.port-layer').style('display', showPortsAndBases ? null : 'none');
   svg.select('.base-layer').style('display', showPortsAndBases ? null : 'none');
+  // Absorbed primary cities (e.g. Djibouti) render at true position for low
+  // zoom; the cluster splay takes over at zoom ≥ 3, so hide the primaries
+  // once the cluster is visible to avoid drawing each city twice.
+  svg.selectAll('.absorbed-primary').style('display', showPortsAndBases ? 'none' : null);
   svg.select('.geo-z2').style('display', showGeoZ2 ? null : 'none');
   svg.select('.river-secondary').style('display', showGeoZ2 ? null : 'none');
 
@@ -2102,12 +2130,43 @@ function renderCities() {
       .on('click', (ev) => { ev.stopPropagation(); selectCity(name); });
   };
 
-  // Primary cities — always visible.
+  // --- Unified cluster absorption -----------------------------------------
+  // At max zoom the Djibouti corridor stacks eight items inside a couple of
+  // kilometres: six foreign bases + Djibouti port + Doraleh + the Djibouti
+  // city dot. To keep any of it readable we let ports and primary cities be
+  // absorbed into a foreign-base cluster when they fall within its 0.3°
+  // radius, then splay the whole constellation on concentric rings (markers
+  // inner, labels outer) around the cluster centroid. Items that are NOT
+  // near a base still render in-place with counter-scaled markers.
+  const BASE_COLORS = {
+    USA: '#1F3A5F', CHN: '#B5651D', RUS: '#7A5C3A',
+    FRA: '#4A6FA5', JPN: '#8A5A7C', ITA: '#6B8E6F',
+    UAE: '#7D8440', TUR: '#7A3030', EGY: '#8A6D3B',
+  };
+
+  // Geographic proximity test used to decide whether a port / city should be
+  // absorbed into the base cluster pass. Uses the same 0.3° threshold the
+  // bases themselves cluster on.
+  const nearAnyBase = (pt, thresh = 0.3) =>
+    FOREIGN_BASES.some(b => Math.hypot(b.lon - pt.lon, b.lat - pt.lat) <= thresh);
+
+  const absorbedCityNames = new Set();
+  const absorbedPortNames = new Set();
+  CITIES.forEach(c => { if (nearAnyBase(c)) absorbedCityNames.add(c.name); });
+  PORTS.forEach(p => { if (nearAnyBase(p)) absorbedPortNames.add(p.name); });
+
+  // --- Primary cities ---
+  // Absorbed cities (= inside a foreign-base cluster) are *still* rendered
+  // here so they appear at low zoom, when the cluster layer is hidden. They
+  // get an 'absorbed-primary' class so updateZoomLayers can hide them once
+  // the cluster takes over (zoom ≥ 3).
   const primary = layer.append('g').attr('class', 'city-primary');
   CITIES.forEach(c => {
     const [x, y] = projection([c.lon, c.lat]);
     if (!isFinite(x)) return;
-    const cityGroup = primary.append('g').attr('class', 'city-hit');
+    const absorbed = absorbedCityNames.has(c.name);
+    const cityGroup = primary.append('g')
+      .attr('class', 'city-hit' + (absorbed ? ' absorbed-primary' : ''));
     if (c.capital) {
       cityGroup.append('circle').attr('cx', x).attr('cy', y).attr('r', 3.2).attr('class', 'city-ring');
       cityGroup.append('circle').attr('cx', x).attr('cy', y).attr('r', 1.4).attr('class', 'city-dot');
@@ -2121,7 +2180,7 @@ function renderCities() {
     bindCityClick(cityGroup, c.name);
   });
 
-  // Secondary cities — shown at zoom ≥ 2.5.
+  // --- Secondary cities — shown at zoom ≥ 2.5 ---
   const secondary = layer.append('g').attr('class', 'city-secondary').style('display', 'none');
   SECONDARY_CITIES.forEach(c => {
     const [x, y] = projection([c.lon, c.lat]);
@@ -2135,138 +2194,134 @@ function renderCities() {
     bindCityClick(g, c.name);
   });
 
-  // Ports — shown at zoom ≥ 3.0. Square marker. Click surfaces the port /
-  // city detail panel the same way a city dot does; a port's population
-  // falls back to its host city when the port itself isn't in CITY_POP.
+  // --- Non-absorbed ports — counter-scaled marker so the square stays ~6 px
+  // regardless of zoom. (Before this, port rects scaled 8× at max zoom and
+  // any two ports under 10 km apart physically overlapped each other.) ---
   const ports = layer.append('g').attr('class', 'port-layer').style('display', 'none');
   PORTS.forEach(p => {
+    if (absorbedPortNames.has(p.name)) return;
     const [x, y] = projection([p.lon, p.lat]);
     if (!isFinite(x)) return;
     const g = ports.append('g').attr('class', 'city-hit');
-    g.append('rect')
-      .attr('x', x - 2.6).attr('y', y - 2.6).attr('width', 5.2).attr('height', 5.2)
+    // Marker inside a counter-scaled anchor → stays visually ~6 px. Reuses
+    // the base-* anchor classes so the existing zoom handler counter-scales
+    // this along with everything else.
+    const mAnchorGroup = g.append('g').attr('transform', `translate(${x} ${y})`);
+    const mAnchor = mAnchorGroup.append('g').attr('class', 'base-marker-anchor');
+    mAnchor.append('rect')
+      .attr('x', -3).attr('y', -3).attr('width', 6).attr('height', 6)
       .attr('class', 'port-marker');
-    g.append('text')
-      .attr('x', x + 6).attr('y', y + 3)
+    const lAnchorGroup = g.append('g').attr('transform', `translate(${x} ${y})`);
+    const lAnchor = lAnchorGroup.append('g')
+      .attr('class', 'base-label-anchor')
+      .attr('data-lx', 9).attr('data-ly', 3);
+    lAnchor.append('text')
       .attr('class', 'port-label')
+      .attr('text-anchor', 'start')
+      .attr('dx', 0).attr('dy', 0)
       .text(p.name);
     bindCityClick(g, p.name);
   });
 
-  // Foreign bases — shown at zoom ≥ 3.0. Chevron-ish marker color-coded by flag.
-  // Djibouti is an extreme cluster case (Camp Lemonnier + Chabelley + PLA +
-  // French + JSDF + Italian bases within a few km of each other), so we group
-  // nearby bases and splay their labels radially from the cluster centroid
-  // with short leader lines connecting each marker to its label.
+  // --- Foreign bases + absorbed ports + absorbed cities -------------------
+  // Shown at zoom ≥ 3.0 alongside the port layer. Items are tagged with a
+  // ctype ("base" | "port" | "capital" | "city") which drives marker shape
+  // and color per member; the ring-splay mechanics are shared.
   const bases = layer.append('g').attr('class', 'base-layer').style('display', 'none');
-  const BASE_COLORS = {
-    USA: '#1F3A5F', CHN: '#B5651D', RUS: '#7A5C3A',
-    FRA: '#4A6FA5', JPN: '#8A5A7C', ITA: '#6B8E6F',
-    UAE: '#7D8440', TUR: '#7A3030', EGY: '#8A6D3B',
+
+  const clusterItems = [
+    ...FOREIGN_BASES.map(b => ({ name: b.name, lat: b.lat, lon: b.lon, ctype: 'base', flag: b.flag })),
+    ...PORTS.filter(p => absorbedPortNames.has(p.name))
+            .map(p => ({ name: p.name, lat: p.lat, lon: p.lon, ctype: 'port' })),
+    ...CITIES.filter(c => absorbedCityNames.has(c.name))
+            .map(c => ({ name: c.name, lat: c.lat, lon: c.lon, ctype: c.capital ? 'capital' : 'city' })),
+  ];
+  const clusters = clusterBases(clusterItems, 0.3);
+
+  // Draws the marker for a single cluster member inside a counter-scaled
+  // anchor group already translated to its final screen position.
+  const drawMemberMarker = (mAnchor, item) => {
+    if (item.ctype === 'base') {
+      mAnchor.append('path')
+        .attr('d', 'M 0 -4.2 L 3.6 3.2 L -3.6 3.2 Z')
+        .attr('class', 'base-marker')
+        .attr('fill', BASE_COLORS[item.flag] || '#555');
+    } else if (item.ctype === 'port') {
+      mAnchor.append('rect')
+        .attr('x', -3).attr('y', -3).attr('width', 6).attr('height', 6)
+        .attr('class', 'port-marker');
+    } else if (item.ctype === 'capital') {
+      mAnchor.append('circle').attr('cx', 0).attr('cy', 0).attr('r', 3.4).attr('class', 'city-ring');
+      mAnchor.append('circle').attr('cx', 0).attr('cy', 0).attr('r', 1.4).attr('class', 'city-dot');
+    } else {
+      mAnchor.append('circle').attr('cx', 0).attr('cy', 0).attr('r', 2).attr('class', 'city-dot');
+    }
   };
 
-  // Cluster bases whose geographic positions are within ~30km of each other
-  // (0.3° threshold is generous — works at all zoom levels since we splay in
-  // screen-space, not geo-space).
-  const clusters = clusterBases(FOREIGN_BASES, 0.3);
-
   clusters.forEach(cluster => {
-    // Cluster centroid in projected pixels
     const cpts = cluster.map(b => projection([b.lon, b.lat])).filter(p => p && isFinite(p[0]));
     if (!cpts.length) return;
     const cx = cpts.reduce((s,p) => s + p[0], 0) / cpts.length;
     const cy = cpts.reduce((s,p) => s + p[1], 0) / cpts.length;
 
     if (cluster.length === 1) {
-      // Solo base — marker + adjacent label, both wrapped in counter-scaled
-      // anchors so their pixel size stays constant across zoom levels.
       const b = cluster[0];
       const [x, y] = projection([b.lon, b.lat]);
-      const color = BASE_COLORS[b.flag] || '#555';
-      const mGroup = bases.append('g')
-        .attr('class', 'base-marker-group')
-        .attr('transform', `translate(${x} ${y})`);
+      const mGroup = bases.append('g').attr('transform', `translate(${x} ${y})`);
       const mAnchor = mGroup.append('g').attr('class', 'base-marker-anchor');
-      mAnchor.append('path')
-        .attr('d', `M 0 -4.2 L 3.6 3.2 L -3.6 3.2 Z`)
-        .attr('class', 'base-marker')
-        .attr('fill', color);
-      // Label — counter-scaled anchor; place to upper-right at fixed screen px.
-      const labelGroup = bases.append('g')
-        .attr('class', 'base-label-group')
-        .attr('transform', `translate(${x} ${y})`);
+      drawMemberMarker(mAnchor, b);
+      const labelGroup = bases.append('g').attr('transform', `translate(${x} ${y})`);
       const labelAnchor = labelGroup.append('g')
         .attr('class', 'base-label-anchor')
-        .attr('data-lx', 10)
-        .attr('data-ly', 0);
-      labelAnchor.append('text')
+        .attr('data-lx', 10).attr('data-ly', 0);
+      const clickable = (b.ctype !== 'base');
+      const text = labelAnchor.append('text')
         .attr('class', 'base-label')
         .attr('text-anchor', 'start')
         .attr('dx', 0).attr('dy', 3)
         .text(b.name);
+      if (clickable) {
+        mGroup.style('cursor', 'pointer').on('click', ev => { ev.stopPropagation(); selectCity(b.name); });
+        labelGroup.style('cursor', 'pointer').on('click', ev => { ev.stopPropagation(); selectCity(b.name); });
+      }
       return;
     }
 
-    // Cluster: draw each marker at its true location, then arrange labels
-    // on a ring around the cluster centroid. A leader line connects every
-    // marker to its label so the user can tell which base is which.
-    // Ring radius is in inverse-k CSS units so it stays a constant visible
-    // size regardless of zoom. We expose the (x,y) of each label through
-    // data-label-angle so the label text can be placed via CSS custom props.
-    // Cluster rendering strategy: because the bases sit within a few km of
-    // each other, we abandon their true pixel positions and instead place
-    // both markers AND labels on two concentric rings around the cluster
-    // centroid. Marker ring (inner) + label ring (outer). Both are anchored
-    // in geo-space at the centroid, then the on-screen offsets are applied
-    // via inverse-scaled <g> elements so the rings have constant pixel size
-    // at every zoom level. This is what eliminates marker overlap.
+    // Multi-member cluster — inner marker ring + outer label ring.
     const n = cluster.length;
-    // Sort by angle from centroid so the ring order roughly mirrors the
-    // geographic arrangement.
     const withAngle = cluster.map((b, i) => {
       const p = projection([b.lon, b.lat]);
       const dx = p[0] - cx, dy = p[1] - cy;
       const angle = (dx === 0 && dy === 0) ? (i * 2 * Math.PI / n) : Math.atan2(dy, dx);
       return { b, p, angle };
-    }).sort((a,z) => a.angle - z.angle);
+    }).sort((a, z) => a.angle - z.angle);
 
-    // Ring radii scale with cluster size — more bases need more room.
-    const markerR = Math.max(14, 6 + n * 2.2);   // inner ring (screen px)
-    const labelR  = markerR + 44;                 // outer ring (screen px)
+    // Ring radii grow with membership — Djibouti's 8-item cluster gets a
+    // wider splay than a two-base cluster elsewhere.
+    const markerR = Math.max(16, 8 + n * 2.4);
+    const labelR  = markerR + 46;
     const startAngle = withAngle[0].angle;
 
     withAngle.forEach((item, i) => {
       const { b } = item;
       const ang = startAngle + (i * 2 * Math.PI / n);
-      const color = BASE_COLORS[b.flag] || '#555';
       const cosA = Math.cos(ang), sinA = Math.sin(ang);
+      const clickable = (b.ctype !== 'base');
 
-      // --- Marker on the inner ring (screen-constant offset from centroid) ---
-      const mGroup = bases.append('g')
-        .attr('class', 'base-marker-group')
-        .attr('transform', `translate(${cx} ${cy})`);
+      // --- Marker on inner ring ---
+      const mGroup = bases.append('g').attr('transform', `translate(${cx} ${cy})`);
       const mAnchor = mGroup.append('g')
         .attr('class', 'base-marker-anchor')
         .attr('data-lx', markerR * cosA)
         .attr('data-ly', markerR * sinA);
-      mAnchor.append('path')
-        .attr('d', `M 0 -4.2 L 3.6 3.2 L -3.6 3.2 Z`)
-        .attr('class', 'base-marker')
-        .attr('fill', color);
+      drawMemberMarker(mAnchor, b);
 
-      // --- Label on the outer ring + leader from marker ring to label ring ---
-      const labelGroup = bases.append('g')
-        .attr('class', 'base-label-group')
-        .attr('transform', `translate(${cx} ${cy})`);
+      // --- Label on outer ring with leader line back to marker ---
+      const labelGroup = bases.append('g').attr('transform', `translate(${cx} ${cy})`);
       const labelAnchor = labelGroup.append('g')
         .attr('class', 'base-label-anchor')
         .attr('data-lx', labelR * cosA)
         .attr('data-ly', labelR * sinA);
-
-      // Leader: from label origin (0,0) back toward the marker position
-      // (which sits at (markerR - labelR) along the same radial). The
-      // updateZoomLayers function rewrites x2/y2 per tick so the leader
-      // always reaches the marker regardless of zoom.
       labelAnchor.append('line')
         .attr('class', 'base-leader')
         .attr('x1', 0).attr('y1', 0)
@@ -2274,14 +2329,17 @@ function renderCities() {
         .attr('data-marker-r', markerR)
         .attr('data-label-r', labelR)
         .attr('data-angle', ang);
-
-      // Text — anchor side based on which half of the ring the label is on.
       const rightSide = cosA >= -0.01;
       labelAnchor.append('text')
         .attr('class', 'base-label')
         .attr('text-anchor', rightSide ? 'start' : 'end')
         .attr('dx', rightSide ? 5 : -5).attr('dy', 3)
         .text(b.name);
+
+      if (clickable) {
+        mGroup.style('cursor', 'pointer').on('click', ev => { ev.stopPropagation(); selectCity(b.name); });
+        labelGroup.style('cursor', 'pointer').on('click', ev => { ev.stopPropagation(); selectCity(b.name); });
+      }
     });
   });
 }

@@ -619,6 +619,7 @@ window.CONFLICT_DATA = {
         UAE: "sml", // Berbera, DP World, Puntland ties
         ETH: "sml", // MoU Jan 2024
         SOL: "sml", // Somaliland itself, its own side
+        SSC_KHATUMO: "khatumo", // Sool/Sanaag/Cayn breakaway from Somaliland
         KEN: "fgs",
         DJI: "fgs",
         SAU: "fgs",
@@ -1906,6 +1907,20 @@ window.CONFLICT_DATA = {
         ethiopia: "Signed Jan 2024 MoU with Addis for sea access via Berbera in exchange for a path to recognition; deepened defence and commercial ties; aligned de facto with the Ethiopian federal government.",
         somalia: "De facto independent since 1991; Mogadishu does not recognise Somaliland's sovereignty and rejected the Ethiopia MoU. Irro took office Dec 2024 after a peaceful transition; UAE is principal external partner via DP World Berbera."
       }
+    },
+    SSC_KHATUMO: {
+      name: "SSC-Khatumo",
+      status: "Self-declared federal member state of Somalia (proclaimed Feb 2023); seeks to join the Somali federation; territory disputed by Somaliland and Puntland",
+      capital: "Las Anod",
+      pop: "~1.5M claimed (overlaps with Somaliland/Puntland claims)",
+      gdp: "n/a",
+      gdpPc: "n/a",
+      mil: "SSC local forces drawn from Dhulbahante clan militias (no published budget)",
+      roles: {
+        sudan: "No direct role.",
+        ethiopia: "No direct role; Addis has expressed sympathy (Dhulbahante ties across the border) but not extended recognition.",
+        somalia: "Pushed Somaliland forces out of Las Anod in Aug 2023 after months of fighting, and claims the Sool, Sanaag and Cayn regions. Villa Somalia welcomed SSC-Khatumo's federal-state application in Oct 2023 but has not formally admitted it as a sixth FMS; Somaliland continues to treat the territory as an integral part of its claimed state."
+      }
     }
   },
 
@@ -2181,6 +2196,12 @@ window.CONFLICT_DATA = {
       RUS: [
         { pub: "Crisis Group", head: "Russia's limited bilateral engagement with Somalia", date: "2024", url: "https://www.crisisgroup.org/africa/horn-africa/somalia" },
         { pub: "Reuters", head: "Russia maintains modest diplomatic presence in Mogadishu", date: "2023", url: "https://www.reuters.com/world/africa/" }
+      ],
+      SSC_KHATUMO: [
+        { pub: "International Crisis Group", head: "Averting Wider War in Somaliland's Contested East", date: "Aug 2023", url: "https://www.crisisgroup.org/africa/horn-africa/somalia-somaliland/averting-wider-war-somalilands-contested-east" },
+        { pub: "Reuters", head: "Somaliland forces pushed out of Las Anod as local militia declares new state", date: "Aug 2023", url: "https://www.reuters.com/world/africa/" },
+        { pub: "BBC News", head: "Las Anod: How a Somali border town became a flashpoint", date: "2023", url: "https://www.bbc.com/news/world-africa" },
+        { pub: "Hiraal Institute", head: "SSC-Khatumo and the future of Somaliland's territorial claims", date: "2024", url: "https://hiraalinstitute.org/" }
       ]
     }
   },
@@ -2631,6 +2652,34 @@ const GATEWAYS = {
 
 // Any actor labeled on the map is also clickable anywhere, in any mode.
 const SELECTABLE_COUNTRIES = FOCUS_ACTORS;
+
+// Approximate SSC-Khatumo claim / control polygon (Somalia mode).
+// Natural Earth's admin-1 bundle treats Somaliland as a single feature with
+// no sub-provinces, so the territory SSC-Khatumo has controlled since the
+// Aug 2023 capture of Las Anod isn't in the source data. This is a
+// hand-drawn approximation covering most of old Sool region and the
+// western fringe of Sanaag — conservative on the edges to stay inside the
+// SOL polygon and avoid spilling into Ethiopia or Puntland. Drawn as a
+// GeoJSON Feature so pathGen can render it with the same projection as
+// everything else. Rendered as a hatched khatumo overlay on top of the
+// Somaliland sml tint; click routes to the SSC_KHATUMO country profile.
+const KHATUMO_POLYGON = {
+  type: 'Feature',
+  properties: { name: 'SSC-Khatumo (approximate)' },
+  geometry: {
+    type: 'Polygon',
+    coordinates: [[
+      [46.40, 9.30],
+      [46.90, 9.55],
+      [47.70, 9.35],
+      [48.10, 8.95],
+      [48.10, 8.40],
+      [47.00, 8.20],
+      [46.40, 8.60],
+      [46.40, 9.30]
+    ]]
+  }
+};
 
 // Arrow style by type
 function arrowStyle(type) {
@@ -3605,6 +3654,25 @@ function renderTints() {
         .on('click', () => selectCountry(clickIso));
     });
   });
+
+  // 3) SSC-Khatumo overlay — Somalia mode only. See KHATUMO_POLYGON for
+  //    rationale; the hand-drawn feature sits on top of Somaliland's sml
+  //    tint with an explicit khatumo hatch (not the default solid wash)
+  //    so the sml color still reads through underneath — the visual is
+  //    "SSC-Khatumo contests this eastern slice of Somaliland" rather
+  //    than "SSC-Khatumo owns it cleanly". Click opens the profile.
+  if (state.mode === 'somalia' && typeof KHATUMO_POLYGON !== 'undefined') {
+    const pathD = pathGen(KHATUMO_POLYGON);
+    if (pathD) {
+      layer.append('path')
+        .attr('d', pathD)
+        .attr('class', 'tint')
+        .attr('fill', 'url(#hatch-khatumo)')
+        .attr('opacity', 1)
+        .style('cursor', 'pointer')
+        .on('click', () => selectCountry('SSC_KHATUMO'));
+    }
+  }
 }
 
 // Curve between two projected points
@@ -4313,7 +4381,10 @@ window.jumpToArrow = jumpToArrow;
 function renderLegend() {
   const legend = document.getElementById('legend');
   const mode = DATA.modes[state.mode];
-  const hatchedLegendIds = new Set(['ash', 'shabaab', 'unrest', 'eritrean', 'contested']);
+  // khatumo joins the hatched group because SSC-Khatumo is rendered as a
+  // hatched overlay on Somaliland rather than a solid tint (see renderTints
+  // pass 3). Legend swatch should match the on-map treatment.
+  const hatchedLegendIds = new Set(['ash', 'shabaab', 'unrest', 'eritrean', 'contested', 'khatumo']);
   const sidesHtml = mode.sides.map(s => {
     let sw;
     if (s.id === 'tplf-leaning') sw = `background: repeating-linear-gradient(45deg, #7C766A 0 1.2px, transparent 1.2px 4px), ${s.color}; opacity: 0.75;`;

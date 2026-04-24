@@ -3012,6 +3012,19 @@ function updateZoomLayers(k) {
     el.attr('transform', `translate(${lx/k} ${ly/k}) scale(${1/k})`);
   });
 
+  // Milestone cluster fanout: each pin sits at (cx + fx/k, cy + fy/k) where
+  // (cx,cy) is the shared projected coord and (fx,fy) is the screen-pixel
+  // offset set by renderMilestones. Re-applied on every zoom tick so the
+  // spread stays constant in screen pixels instead of scaling with k.
+  svg.selectAll('.milestone-group').each(function() {
+    const cx = +this.getAttribute('data-cx');
+    const cy = +this.getAttribute('data-cy');
+    const fx = +this.getAttribute('data-fx') || 0;
+    const fy = +this.getAttribute('data-fy') || 0;
+    if (!isFinite(cx) || !isFinite(cy)) return;
+    this.setAttribute('transform', `translate(${cx + fx/k} ${cy + fy/k})`);
+  });
+
   // Label anchors — position + counter-scale. Leader line runs from the
   // label origin (0,0 in anchor-local coords, which is screen-px after the
   // 1/k scale) back toward the marker position. For cluster labels, the
@@ -3829,6 +3842,25 @@ function renderOffMapGateways() {
 // Milestone pins: mode-scoped historical events pinned at real lon/lat.
 // Numbered small circles; clicking opens the rail's milestone-detail panel.
 // Counter-scaled via CSS rules on #mapRoot .milestone-*.
+//
+// Co-located events (multiple milestones at the same coords — e.g. three at
+// Mekele, three at Mogadishu) get fanned out around their shared projected
+// point so no pin hides another. The fan offset is stored in data-fx /
+// data-fy on each group and re-applied each zoom tick in updateZoomLayers,
+// so the spread stays constant in screen pixels rather than scaling with k.
+function milestoneClusterOffsets(n) {
+  if (n <= 1) return [[0, 0]];
+  if (n === 2) return [[-12, 0], [12, 0]];
+  // Equilateral triangle, apex up — readable even at dense zooms.
+  if (n === 3) return [[0, -12], [-10.4, 6], [10.4, 6]];
+  // 4+: evenly-spaced ring starting at top.
+  const R = 13;
+  return Array.from({ length: n }, (_, i) => {
+    const ang = -Math.PI / 2 + (i * 2 * Math.PI / n);
+    return [R * Math.cos(ang), R * Math.sin(ang)];
+  });
+}
+
 function renderMilestones() {
   // Defensive guard: selection callbacks (selectMilestone / clearSelection)
   // may fire in edge cases before the map / d3 has finished loading — bail
@@ -3839,16 +3871,40 @@ function renderMilestones() {
   layer.selectAll('*').remove();
   if (!state.showMilestones) return;
   const list = (DATA.milestones && DATA.milestones[state.mode]) || [];
+
+  // Group milestones by identical coords. Exact-match keying is fine for our
+  // curated data set; a future editor using near-but-not-equal coords would
+  // need an epsilon-snap pass here.
+  const clusters = new Map();
   list.forEach((ms, i) => {
-    const p = projection([ms.lon, ms.lat]);
+    const key = ms.lon + ',' + ms.lat;
+    if (!clusters.has(key)) clusters.set(key, []);
+    clusters.get(key).push({ ms, index: i });
+  });
+
+  // Current zoom scale — used so the initial transform is right even before
+  // the first updateZoomLayers tick (e.g. when render() is called on mode
+  // switch with an already-zoomed map).
+  let k = 1;
+  try { if (state.zoom) k = d3.zoomTransform(svg.node()).k || 1; } catch { /* ignore */ }
+
+  clusters.forEach(members => {
+    const anchor = members[0].ms;
+    const p = projection([anchor.lon, anchor.lat]);
     if (!p) return;
-    const isSelected = state.selected && state.selected.type === 'milestone' && state.selected.id === ms.id;
-    const g = layer.append('g')
-      .attr('class', 'milestone-group' + (isSelected ? ' selected' : ''))
-      .attr('transform', `translate(${p[0]} ${p[1]})`)
-      .on('click', (ev) => { ev.stopPropagation(); selectMilestone(ms.id); });
-    g.append('circle').attr('class', 'milestone-ring').attr('cx', 0).attr('cy', 0);
-    g.append('text').attr('class', 'milestone-num').attr('x', 0).attr('y', 0).text(i + 1);
+    const offsets = milestoneClusterOffsets(members.length);
+    members.forEach(({ ms, index }, i) => {
+      const [fx, fy] = offsets[i];
+      const isSelected = state.selected && state.selected.type === 'milestone' && state.selected.id === ms.id;
+      const g = layer.append('g')
+        .attr('class', 'milestone-group' + (isSelected ? ' selected' : ''))
+        .attr('data-cx', p[0]).attr('data-cy', p[1])
+        .attr('data-fx', fx).attr('data-fy', fy)
+        .attr('transform', `translate(${p[0] + fx / k} ${p[1] + fy / k})`)
+        .on('click', (ev) => { ev.stopPropagation(); selectMilestone(ms.id); });
+      g.append('circle').attr('class', 'milestone-ring').attr('cx', 0).attr('cy', 0);
+      g.append('text').attr('class', 'milestone-num').attr('x', 0).attr('y', 0).text(index + 1);
+    });
   });
 }
 

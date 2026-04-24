@@ -319,14 +319,22 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 
 footer {
   border-top: 1px solid var(--line); padding: 8px 20px;
-  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  display: flex; flex-wrap: wrap; gap: 6px 22px;
   align-items: center; background: var(--panel); font-size: 11px;
-  max-height: 46px; overflow: hidden;
 }
-.legend-group { display: inline-flex; gap: 14px; align-items: center; flex-wrap: nowrap; }
+.legend-group { display: inline-flex; gap: 6px 14px; align-items: center; flex-wrap: wrap; }
 .legend-swatch { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--ink-2); white-space: nowrap; }
 .legend-swatch .sw { width: 14px; height: 10px; border: 1px solid rgba(0,0,0,0.08); }
-.legend-arrows { display: inline-flex; gap: 10px; align-items: center; flex-wrap: nowrap; margin-left: auto; }
+.legend-arrows { display: inline-flex; gap: 6px 10px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+/* Below ~1100px the legend + arrow-filter row can't fit on one line; let the
+   arrow filter stack under the swatches instead of being pushed off-screen,
+   and below ~900px drop the usage-hint copy entirely. */
+@media (max-width: 1100px) {
+  .legend-arrows { margin-left: 0; }
+}
+@media (max-width: 900px) {
+  .footer-note { display: none; }
+}
 .legend-arrow {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 10px; color: var(--ink-2);

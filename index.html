@@ -356,6 +356,142 @@ footer {
   font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3);
   letter-spacing: 0.1em; text-transform: uppercase;
 }
+
+/* Milestone pins (renderMilestones). Numbered circles at real geo coords,
+   counter-scaled each zoom tick so they stay ~constant pixel size. */
+#mapRoot .milestone-ring { r: calc(9px / var(--k)); stroke-width: calc(1.4px / var(--k)); }
+#mapRoot .milestone-dot  { r: calc(3px / var(--k)); }
+#mapRoot .milestone-num  { font-size: calc(9px / var(--k)); stroke-width: calc(2px / var(--k)); }
+#mapRoot .milestone-ring,
+#mapRoot .milestone-num {
+  vector-effect: non-scaling-stroke;
+}
+.milestone-ring {
+  fill: #FAF8F3; stroke: #2C2A26; stroke-width: 1.4px;
+  transition: fill .12s, stroke .12s;
+}
+.milestone-dot { fill: #2C2A26; pointer-events: none; }
+.milestone-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700; fill: #2C2A26;
+  text-anchor: middle; dominant-baseline: central;
+  pointer-events: none;
+  paint-order: stroke fill;
+  stroke: #FAF8F3; stroke-width: 2px;
+}
+.milestone-group { cursor: pointer; }
+.milestone-group:hover .milestone-ring { fill: #F1EEE5; stroke: #1A1A1A; }
+.milestone-group.selected .milestone-ring { fill: #FAF8F3; stroke: #B8413A; stroke-width: 1.8px; }
+.milestone-group.selected .milestone-dot { fill: #B8413A; }
+
+/* Arrows flagged era:"historical" get a faint, sepia look so they read as
+   background context, not active flows. Applied via a class on the group. */
+#mapRoot .arrow-historical { opacity: 0.45; }
+#mapRoot .arrow-historical.arrow-origin,
+#mapRoot .arrow-historical.arrow { filter: saturate(0.55); }
+
+/* Roots card — collapsible "Before the war" header on the rail default view. */
+.roots-card {
+  border: 1px solid var(--line); border-radius: 2px;
+  margin-bottom: 22px; background: #FDFCF7; overflow: hidden;
+}
+.roots-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid transparent; transition: background .12s;
+}
+.roots-head:hover { background: #F5F1E5; }
+.roots-card.open .roots-head { border-bottom-color: var(--line); }
+.roots-kicker {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase;
+  margin-right: auto;
+}
+.roots-title {
+  font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3;
+}
+.roots-caret {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--ink-3); transition: transform .15s;
+}
+.roots-card.open .roots-caret { transform: rotate(90deg); }
+.roots-body { padding: 10px 14px 14px; display: none; }
+.roots-card.open .roots-body { display: block; }
+.roots-bullet {
+  padding: 9px 0; border-top: 1px dashed var(--line);
+}
+.roots-bullet:first-child { border-top: none; padding-top: 4px; }
+.roots-bullet-era {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.06em; color: var(--ink-3);
+  margin-bottom: 2px; text-transform: uppercase;
+}
+.roots-bullet-head {
+  font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 3px;
+}
+.roots-bullet-body {
+  font-size: 12px; color: var(--ink-2); line-height: 1.5;
+}
+.roots-close {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+  font-size: 12px; color: var(--ink-2); font-style: italic; line-height: 1.5;
+}
+
+/* Linkage block in arrow detail — cross-mode jump links. */
+.linkage-block {
+  margin: 14px 0 18px; padding: 12px 14px;
+  background: #FDFCF7; border: 1px solid var(--line); border-radius: 2px;
+}
+.linkage-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.12em; color: var(--ink-3);
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.linkage-item {
+  padding: 6px 0; border-top: 1px dashed var(--line);
+}
+.linkage-item:first-of-type { border-top: none; padding-top: 0; }
+.linkage-btn {
+  appearance: none; background: none; border: none; padding: 0;
+  color: var(--ink); font-family: inherit; font-size: 12.5px;
+  font-weight: 600; cursor: pointer; text-align: left;
+  border-bottom: 1px solid var(--line-2); line-height: 1.35;
+}
+.linkage-btn:hover { border-bottom-color: var(--ink); }
+.linkage-note {
+  font-size: 11.5px; color: var(--ink-2); line-height: 1.5; margin-top: 3px;
+}
+
+/* Off-map / through-line detail rows */
+.throughline-block { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.throughline-mode {
+  margin-bottom: 14px;
+}
+.throughline-mode-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 8px;
+}
+.throughline-arrow {
+  padding: 7px 0; border-top: 1px dashed var(--line);
+  display: grid; grid-template-columns: 8px 1fr auto; gap: 8px;
+  cursor: pointer; align-items: baseline;
+}
+.throughline-arrow:first-child { border-top: none; }
+.throughline-arrow:hover .throughline-title { border-bottom-color: var(--ink); }
+.throughline-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  margin-top: 5px;
+}
+.throughline-title {
+  font-size: 12px; font-weight: 600; color: var(--ink);
+  border-bottom: 1px solid var(--line-2);
+  line-height: 1.4;
+}
+.throughline-dates {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  color: var(--ink-3); letter-spacing: 0.04em; white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -628,6 +764,10 @@ window.CONFLICT_DATA = {
         title: "UAE → RSF",
         dates: "2023–present",
         summary: "Arms, Wing Loong / Chinese drones, FN Herstal rifles, artillery and satellite comms moved to RSF via Amdjarass (Chad) and Kufra (eastern Libya). UN Panels of Experts have documented the airbridge in detail; UAE underwriting extended to Colombian mercenary recruitment from mid-2025.",
+        linkage: [
+          { mode: "ethiopia", arrowId: "uae-fed", note: "Same UAE drone-plus-airbridge template Abu Dhabi had already run into Addis during Tigray." },
+          { mode: "somalia",  arrowId: "uae-sml", note: "Same Gulf-foothold playbook: Berbera/Puntland on one shoulder, RSF on the other." }
+        ],
         sources: [
           { pub: "UN Panel of Experts on Sudan", head: "Final report S/2024/65 (Chad airbridge)", date: "Jan 2024", url: "https://undocs.org/S/2024/65" },
           { pub: "UN Panel of Experts on Sudan", head: "Final report S/2025/239 (Kufra transit, Colombian recruits)", date: "Mar 2025", url: "https://undocs.org/S/2025/239" },
@@ -656,6 +796,10 @@ window.CONFLICT_DATA = {
         title: "Egypt → SAF",
         dates: "2023–present",
         summary: "Egyptian Air Force strikes from East Oweinat airbase; Bayraktar Akinci sorties over northern Sudan (Oct 2024); training and shared intelligence with SAF; early-war EAF pilots captured at Merowe.",
+        linkage: [
+          { mode: "ethiopia", arrowId: "egy-tplf", note: "Same Cairo anti-Addis posture — GERD-driven water politics is the through-line." },
+          { mode: "somalia",  arrowId: "egy-fgs",  note: "Part of Cairo's Horn encirclement: SAF + TPLF + Mogadishu all flank Addis." }
+        ],
         sources: [
           { pub: "Middle East Eye", head: "Egyptian Akinci drones striking inside Sudan", date: "Oct 2024", url: "https://www.middleeasteye.net/news/sudan-egypt-akinci-drones" },
           { pub: "Addis Standard", head: "East Oweinat staging for Sudan operations", date: "Oct 2024", url: "https://addisstandard.com/" },
@@ -681,6 +825,9 @@ window.CONFLICT_DATA = {
         title: "Iran → SAF",
         dates: "Late 2023–present",
         summary: "Mohajer-6 drones supplied after Oct 2023 restoration of ties; reportedly decisive in SAF's Omdurman / Bahri counter-offensives of early 2024; possible Ababil / Shahed follow-ons.",
+        linkage: [
+          { mode: "ethiopia", arrowId: "irn-fed", note: "Continuation of Tehran's Mohajer-6 export playbook first seen supplying Addis during Tigray." }
+        ],
         sources: [
           { pub: "Bloomberg", head: "Iran Supplies Drones to Sudan Army", date: "24 Jan 2024", url: "https://www.bloomberg.com/news/articles/2024-01-24/iran-sudan-drones" },
           { pub: "Reuters", head: "Iran restores ties with Sudan", date: "Oct 2023", url: "https://www.reuters.com/world/africa/iran-sudan-ties-2023/" },
@@ -695,6 +842,10 @@ window.CONFLICT_DATA = {
         title: "Turkey → SAF",
         dates: "2024–present",
         summary: "TB2 Bayraktar deliveries Nov 2024, followed by reported Akinci package in 2025; mediation track parallel to arms flow; Suakin concession revived as long-run leverage.",
+        linkage: [
+          { mode: "ethiopia", arrowId: "tur-fed", note: "Same Bayraktar-as-foreign-policy template Ankara ran into Addis from 2021." },
+          { mode: "somalia",  arrowId: "tur-fgs", note: "Part of Ankara's Horn basing-plus-drones arc — Mogadishu's TURKSOM base is the anchor." }
+        ],
         sources: [
           { pub: "Middle East Eye", head: "Turkey steps up drone support to Sudan army", date: "2024", url: "https://www.middleeasteye.net/turkey-sudan-drones" },
           { pub: "Africa Defense Forum", head: "Turkish Akinci drones reshape Sudan air war", date: "Mar 2025", url: "https://adf-magazine.com/" },
@@ -732,6 +883,9 @@ window.CONFLICT_DATA = {
         title: "Eritrea → SAF",
         dates: "2023–present",
         summary: "Training of SAF's Eastern Battalion and Beja auxiliaries at Sawa and Assab; transit and safe haven for anti-RSF fighters in Kassala; part of Asmara's broader axis with Cairo against UAE-backed actors.",
+        linkage: [
+          { mode: "ethiopia", arrowId: "eri-tplf", note: "Asmara's 2024–26 flip: once pro-Addis in Tigray, now backing the Debretsion TPLF wing — and pro-SAF in Sudan." }
+        ],
         sources: [
           { pub: "Radio Dabanga", head: "SAF's Eastern Battalion trained in Eritrea", date: "2024", url: "https://www.dabangasudan.org/en/" },
           { pub: "MadaMasr", head: "Eritrea's quiet re-entry into the Sudan war", date: "2024", url: "https://www.madamasr.com/en/" },
@@ -955,6 +1109,45 @@ window.CONFLICT_DATA = {
           { pub: "Al-Masirah", head: "Ansar Allah statements on Sudan", date: "2024–25", url: "https://www.almasirah.net/" },
           { pub: "Sudan War Monitor", head: "Tracking Houthi-SAF reports", date: "2024–25", url: "https://sudanwarmonitor.com/" }
         ]
+      },
+      // --- Historical ties (era: "historical") ------------------------------
+      // Durable pre-2021 relationships that the current Sudan arrows build on.
+      // Hidden by default; toggled on via the footer "Show historical ties" chip.
+      {
+        id: "hist-egy-sdn-nile",
+        from: "EGY", to: "SDN", side: "saf",
+        type: "diplomatic", tier: 3, era: "historical",
+        title: "Egypt ↔ Sudan — Nile alignment (durable)",
+        dates: "1959–present",
+        summary: "The 1959 Nile Waters Agreement locked Cairo and Khartoum into a shared stance against upstream riparians; that alignment is why Egypt so quickly backed the SAF-led state after 2023 and why it anchors the post-GERD counter-Addis axis.",
+        sources: [
+          { pub: "International Crisis Group", head: "Bridging the Gap in the Nile Waters Dispute", date: "2019", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia/271-bridging-gap-nile-waters-dispute" },
+          { pub: "Chatham House", head: "The Geopolitics of the Nile", date: "2021", url: "https://www.chathamhouse.org/" }
+        ]
+      },
+      {
+        id: "hist-uae-sdn-yemen",
+        from: "UAE", to: "SDN", side: "rsf",
+        type: "military", tier: 2, era: "historical",
+        title: "UAE ↔ Sudan — Yemen war recruitment (2015–2019)",
+        dates: "2015–2019",
+        summary: "From 2015 the UAE recruited thousands of Sudanese fighters — drawn disproportionately from the RSF/Janjaweed — for the Saudi-led coalition in Yemen. The relationships built there seeded the post-2023 UAE–RSF patronage.",
+        sources: [
+          { pub: "NYT", head: "On the Front Line of the Saudi War in Yemen: Child Soldiers From Darfur", date: "28 Dec 2018", url: "https://www.nytimes.com/2018/12/28/world/africa/saudi-emirates-war-yemen-child-soldiers-sudan.html" },
+          { pub: "Reuters", head: "Sudan's RSF trained in the Yemen war", date: "2019", url: "https://www.reuters.com/world/africa/" }
+        ]
+      },
+      {
+        id: "hist-eri-sdn-beja",
+        from: "ERI", to: "SDN", side: "saf",
+        type: "diplomatic", tier: 2, era: "historical",
+        title: "Eritrea ↔ eastern Sudan (Beja networks, 1990s–)",
+        dates: "1994–present",
+        summary: "Asmara hosted Sudanese opposition and Beja Congress networks from the mid-1990s; the Kassala–Asmara security channel predates the current SAF–RSF war by three decades and is why Eritrea re-emerged as SAF's most reliable Horn partner in 2023.",
+        sources: [
+          { pub: "Crisis Group", head: "Eritrea: The Siege State", date: "2010", url: "https://www.crisisgroup.org/africa/horn-africa/eritrea/163-eritrea-siege-state" },
+          { pub: "Small Arms Survey", head: "The Beja and Eastern Sudan", date: "2011", url: "https://www.smallarmssurvey.org/" }
+        ]
       }
     ],
 
@@ -980,6 +1173,10 @@ window.CONFLICT_DATA = {
         title: "UAE → Federal govt",
         dates: "2021–present",
         summary: "UAE drones (Wing Loong) were decisive in federal counteroffensive against TPLF advance on Addis in late 2021; economic ties extended since.",
+        linkage: [
+          { mode: "sudan",   arrowId: "uae-rsf", note: "The 2021 Addis pipeline was the template Abu Dhabi later reran for the RSF." },
+          { mode: "somalia", arrowId: "uae-sml", note: "Part of the same UAE Horn portfolio — Berbera port, Puntland ties, airbridge ecosystem." }
+        ],
         sources: [
           { pub: "Reuters", head: "UAE drones tip Tigray war", date: "Dec 2021", url: "https://www.reuters.com/world/africa/uae-drones-ethiopia" },
           { pub: "FT", head: "UAE deepens Horn of Africa role", date: "2023", url: "https://www.ft.com/uae-horn-africa" }
@@ -1082,6 +1279,10 @@ window.CONFLICT_DATA = {
         title: "Eritrea → TPLF (Debretsion faction)",
         dates: "2024–2026",
         summary: "Post-2023 TPLF split between Getachew Reda (Addis-aligned) and Debretsion Gebremichael (Asmara-leaning); Eritrean logistical and communications support to the Debretsion wing has grown as Asmara hedges against a post-Abiy Ethiopia. Reflected on the map by tinting Eritrea with TPLF yellow plus a contested-stripe overlay to flag the hedged, still-complicated posture.",
+        linkage: [
+          { mode: "sudan",   arrowId: "eri-saf", note: "Same Asmara–Cairo–Mogadishu trilateral: Eritrea backing SAF in Sudan, TPLF in Tigray, FGS in Somalia." },
+          { mode: "somalia", arrowId: "eri-fgs", note: "Other leg of the Oct 2024 Asmara tripartite — Eritrea's third front against Addis." }
+        ],
         sources: [
           { pub: "Crisis Group", head: "Ethiopia and Eritrea on a collision course", date: "2025", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-eritrea" },
           { pub: "Addis Standard", head: "Tigray intra-party split", date: "2024", url: "https://addisstandard.com/" },
@@ -1126,6 +1327,43 @@ window.CONFLICT_DATA = {
           { pub: "Israeli MFA", head: "Ethiopia country page", date: "2024", url: "https://www.gov.il/en/departments/ministry_of_foreign_affairs" },
           { pub: "Haaretz", head: "Israel-Ethiopia intelligence cooperation", date: "2022", url: "https://www.haaretz.com/" }
         ]
+      },
+      // --- Historical ties (era: "historical") ------------------------------
+      {
+        id: "hist-eri-tplf-badme",
+        from: "ERI", to: "ETH_TIGRAY", side: "tplf-leaning",
+        type: "military", tier: 3, era: "historical",
+        title: "Eritrea ↔ TPLF — Badme war (1998–2000)",
+        dates: "1998–2000",
+        summary: "The Eritrean–Ethiopian border war over Badme — fought largely under TPLF-led federal command — killed an estimated 70,000–100,000. Isaias's personal enmity with TPLF leaders is why Asmara fought alongside Addis in 2020 — and why it has now flipped to backing the Debretsion TPLF wing against Abiy.",
+        sources: [
+          { pub: "ICG", head: "Eritrea and Ethiopia: The Border War and After", date: "2005", url: "https://www.crisisgroup.org/africa/horn-africa/eritrea/030-ethiopia-and-eritrea-preventing-war" },
+          { pub: "BBC", head: "Ethiopia-Eritrea border war background", date: "2018", url: "https://www.bbc.com/news/world-africa" }
+        ]
+      },
+      {
+        id: "hist-egy-eth-gerd",
+        from: "EGY", to: "ETH_FED", side: "tplf",
+        type: "diplomatic", tier: 3, era: "historical",
+        title: "Egypt ↔ Ethiopia — GERD dispute (2011–)",
+        dates: "2011–present",
+        summary: "Egypt has opposed Ethiopia's Grand Ethiopian Renaissance Dam since its 2011 launch, framing it as an existential water threat. The GERD dispute is the structural reason Cairo rapidly allied with any Ethiopian adversary — TPLF, then Eritrea, then Mogadishu after the Somaliland MoU.",
+        sources: [
+          { pub: "ICG", head: "Bridging the Gap in the Nile Waters Dispute", date: "2019", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia/271-bridging-gap-nile-waters-dispute" },
+          { pub: "Atlantic Council", head: "The GERD at 10", date: "2021", url: "https://www.atlanticcouncil.org/" }
+        ]
+      },
+      {
+        id: "hist-sdn-eth-fashaga",
+        from: "SDN", to: "ETH_FED", side: "tplf",
+        type: "military", tier: 2, era: "historical",
+        title: "Sudan ↔ Ethiopia — Al-Fashaga (2020–2022)",
+        dates: "2020–2022",
+        summary: "SAF moved into the disputed Al-Fashaga triangle in late 2020 as the Tigray war opened; clashes with Amhara militia and ENDF continued into 2022 and anchored Khartoum's adversarial tilt toward Addis that pre-dated its own collapse.",
+        sources: [
+          { pub: "ICG", head: "Containing the Sudan-Ethiopia Border Flare", date: "2022", url: "https://www.crisisgroup.org/africa/horn-africa/ethiopia-sudan/b179-containing-sudan-ethiopia-border-flare" },
+          { pub: "Reuters", head: "Sudan-Ethiopia al-Fashaga clashes", date: "2022", url: "https://www.reuters.com/world/africa/" }
+        ]
       }
     ],
 
@@ -1151,6 +1389,10 @@ window.CONFLICT_DATA = {
         title: "UAE → Somaliland (Berbera)",
         dates: "2016–present",
         summary: "DP World operates Berbera port under a 30-year concession; UAE maintains military and commercial presence in Somaliland, bypassing Mogadishu.",
+        linkage: [
+          { mode: "sudan",    arrowId: "uae-rsf", note: "The same Abu Dhabi Horn strategy — commercial footholds plus armed proxies — that is underwriting the RSF." },
+          { mode: "ethiopia", arrowId: "uae-fed", note: "Berbera sits directly behind the Ethiopia–Somaliland MoU that UAE-backed Addis signed in Jan 2024." }
+        ],
         sources: [
           { pub: "Reuters", head: "DP World expands Berbera", date: "2022", url: "https://www.reuters.com/dp-world-berbera" },
           { pub: "FT", head: "UAE's Horn ports strategy", date: "2023", url: "https://www.ft.com/uae-horn-ports" }
@@ -1387,8 +1629,90 @@ window.CONFLICT_DATA = {
           { pub: "AU Peace and Security Council", head: "Communique authorising AUSSOM", date: "2024", url: "https://www.peaceau.org/" },
           { pub: "UN Secretary-General", head: "Reports on AUSSOM", date: "2025", url: "https://www.un.org/en/sg/" }
         ]
+      },
+      // --- Historical ties (era: "historical") ------------------------------
+      {
+        id: "hist-eth-som-2006",
+        from: "ETH", to: "SOM_FGS", side: "fgs",
+        type: "military", tier: 3, era: "historical",
+        title: "Ethiopia → Somalia — 2006 intervention (durable partner)",
+        dates: "2006–2023",
+        summary: "The 2006 US-backed Ethiopian intervention ousted the ICU from Mogadishu and produced al-Shabaab as a blowback. ENDF folded into AMISOM in 2014 and made Addis Mogadishu's most consequential external security partner — right up until the Jan 2024 Somaliland MoU blew that up.",
+        sources: [
+          { pub: "ICG", head: "Somalia's Islamists and the 2006 war", date: "2006", url: "https://www.crisisgroup.org/africa/horn-africa/somalia" },
+          { pub: "Hiraal Institute", head: "AMISOM and the Ethiopian role", date: "2020", url: "https://hiraalinstitute.org/" }
+        ]
+      },
+      {
+        id: "hist-tur-som-turksom",
+        from: "TUR", to: "SOM_FGS", side: "fgs",
+        type: "military", tier: 3, era: "historical",
+        title: "Turkey → Somalia — TURKSOM base (2017)",
+        dates: "2011–present",
+        summary: "Erdoğan's landmark 2011 visit to famine-stricken Mogadishu opened a decade of Turkish investment; the TURKSOM base (Türkiye's largest foreign military base) opened 2017 and trains the core of the Somali army — the structural basis for the 2024 defence and maritime pact.",
+        sources: [
+          { pub: "Reuters", head: "Turkey opens largest overseas military base in Somalia", date: "2017", url: "https://www.reuters.com/article/us-turkey-somalia-military" },
+          { pub: "Crisis Group", head: "Turkey's role in Somalia", date: "2022", url: "https://www.crisisgroup.org/africa/horn-africa/somalia" }
+        ]
+      },
+      {
+        id: "hist-uae-sml-berbera-2016",
+        from: "UAE", to: "SOM_SML", side: "sml",
+        type: "trade", tier: 2, era: "historical",
+        title: "UAE → Somaliland — DP World concession (2016)",
+        dates: "2016–present",
+        summary: "The DP World 30-year concession at Berbera, signed 2016 and expanded 2018, gave Abu Dhabi a commercial beachhead in Somaliland years before the 2024 Ethiopia–Somaliland MoU turned the port into a geopolitical flashpoint.",
+        sources: [
+          { pub: "Reuters", head: "DP World signs Berbera port deal", date: "2016", url: "https://www.reuters.com/" },
+          { pub: "ICG", head: "The United Arab Emirates in the Horn of Africa", date: "2018", url: "https://www.crisisgroup.org/middle-east-north-africa/gulf-and-arabian-peninsula/united-arab-emirates/b65-united-arab-emirates-horn-africa" }
+        ]
       }
     ]
+  },
+
+  // ----------------------------------------------------------------------
+  // Roots: per-conflict historical background shown in the rail's default
+  // view as a collapsible card. 3–5 bullets covering the durable fault
+  // lines that predate the 2021–26 cutoff of the rest of the map. Kept
+  // terse (≤ 220 chars per body) so the reader can skim before diving in.
+  // ----------------------------------------------------------------------
+  roots: {
+    sudan: {
+      kicker: "BEFORE THE WAR",
+      title: "How Sudan got here",
+      bullets: [
+        { era: "1956–1989", head: "North–South split and the Islamist turn", body: "Independence from Britain in 1956 was followed by decades of civil war between the Arab-Muslim north and the African south, ending only with the 2005 CPA and South Sudan's 2011 secession." },
+        { era: "1989–2003", head: "Bashir's NCP seizes power", body: "Omar al-Bashir's 1989 Islamist coup entrenched the National Congress Party, hosted Bin Laden in the 1990s, and militarised the state around Khartoum's security-business elite." },
+        { era: "2003–2013", head: "Darfur and the birth of the Janjaweed", body: "Khartoum's counter-insurgency in Darfur armed Arab Janjaweed militias; in 2013 Bashir formalised them as the Rapid Support Forces under Mohamed Hamdan 'Hemedti' Dagalo." },
+        { era: "2019", head: "Revolution topples Bashir", body: "Mass protests and a military-RSF palace coup ousted Bashir in Apr 2019; a civilian-military transitional government took office after the Jun 2019 Khartoum massacre of protesters by the RSF." },
+        { era: "2021–2023", head: "Coup, then war between the generals", body: "In Oct 2021 SAF chief Burhan and RSF chief Hemedti jointly overthrew the civilian cabinet; their dispute over RSF integration into the army detonated into open war on 15 Apr 2023." }
+      ],
+      close: "The current SAF–RSF war is a fight between two wings of Bashir's old security state over who inherits it."
+    },
+    ethiopia: {
+      kicker: "BEFORE THE WAR",
+      title: "How Ethiopia got here",
+      bullets: [
+        { era: "1991", head: "EPRDF settlement and Eritrean independence", body: "The TPLF-led EPRDF toppled the Derg in 1991, installed ethnic federalism, and accepted Eritrea's 1993 secession — embedding Tigrayan dominance over the federal state." },
+        { era: "1998–2000", head: "Eritrea border war", body: "A two-year border war with Eritrea over Badme killed an estimated 70,000–100,000 and produced a 'no war, no peace' freeze that lasted until 2018." },
+        { era: "2018", head: "Abiy rises, TPLF sidelined", body: "After Oromo-Amhara protests, Abiy Ahmed became prime minister in Apr 2018, made peace with Eritrea's Isaias, dissolved the EPRDF into the Prosperity Party and pushed the TPLF out of federal power." },
+        { era: "Nov 2020–Nov 2022", head: "Tigray war", body: "Federal forces, allied Amhara militia and Eritrean troops fought the TDF across Tigray; an estimated 600,000 died before the Pretoria Cessation of Hostilities Agreement on 2 Nov 2022." },
+        { era: "2023", head: "Pretoria holds, new fronts open", body: "The Tigray truce held but Abiy's move to dissolve regional special forces ignited a Fano insurgency in Amhara from Apr 2023, while the OLA war in Oromia ground on." }
+      ],
+      close: "Today's Ethiopia arrows track the aftershocks of Pretoria: a hedging Eritrea, a split TPLF, and unresolved Amhara and Oromia fronts."
+    },
+    somalia: {
+      kicker: "BEFORE THE WAR",
+      title: "How Somalia got here",
+      bullets: [
+        { era: "1991", head: "State collapse and Somaliland breakaway", body: "Siad Barre's regime fell in Jan 1991; Somaliland declared independence in May 1991, and the south fractured into warlord fiefdoms with no functioning central state for over a decade." },
+        { era: "2006–2009", head: "ICU, Ethiopian intervention, al-Shabaab", body: "The Islamic Courts Union briefly unified Mogadishu in 2006; a US-backed Ethiopian intervention ousted it, and its youth wing hardened into al-Shabaab, which pledged bayah to al-Qaeda in 2012." },
+        { era: "2007–2022", head: "AMISOM and ATMIS", body: "The AU mission, built around Ugandan, Burundian, Kenyan, Ethiopian and Djiboutian troops, pushed al-Shabaab out of Mogadishu in 2011 and most major towns, at the cost of thousands of peacekeepers." },
+        { era: "2012", head: "Federal Republic re-founded", body: "A provisional federal constitution in Aug 2012 created the Federal Government of Somalia and a member-state system (Puntland, Jubaland, South West, Galmudug, Hirshabelle) that has been contested ever since." },
+        { era: "1991–2021", head: "Somaliland's 30-year de facto state", body: "Hargeisa built its own currency, elections and security forces without international recognition; by 2020 it had opened a Taiwan representative office, setting up the UAE/Ethiopia/Israel recognition drama of 2024–25." }
+      ],
+      close: "The current map is a fight over what a Somali state is — FGS vs al-Shabaab, Mogadishu vs Hargeisa, and Villa Somalia vs its own federal members."
+    }
   },
 
   // Country profiles (real data where available; GDP nominal, most recent year)
@@ -1853,6 +2177,47 @@ window.CONFLICT_DATA = {
     }
   },
 
+  // ----------------------------------------------------------------------
+  // Milestones: mode-scoped key events with map coordinates. Rendered as
+  // small numbered pins on the map (renderMilestones) — clicking one opens
+  // a rail detail panel with the event summary. Coordinates must fall
+  // within the focus bbox (lon 15..60, lat -10..47) or the pin won't
+  // render inside the frame. For events signed at out-of-frame venues
+  // (e.g. Pretoria 2022 CoHA, Ankara 2024 Declaration), we anchor on the
+  // in-frame party — typically Addis for diplomatic events.
+  // ----------------------------------------------------------------------
+  milestones: {
+    sudan: [
+      { id: "coup-oct-2021", name: "Burhan–Hemedti coup", date: "25 Oct 2021", lon: 32.53, lat: 15.59, place: "Khartoum", summary: "SAF chief Burhan and RSF chief Hemedti jointly overthrew the civilian transitional cabinet, ending the post-Bashir power-sharing deal and setting up the rivalry that became the 2023 war." },
+      { id: "war-outbreak-apr-2023", name: "SAF–RSF war begins", date: "15 Apr 2023", lon: 32.53, lat: 15.59, place: "Khartoum", summary: "Fighting erupted in Khartoum between SAF and RSF over the terms of RSF integration into the army, rapidly spreading to Darfur, Kordofan and the Gezira and displacing millions." },
+      { id: "jeddah-talks-may-2023", name: "Jeddah talks launch", date: "11 May 2023", lon: 39.19, lat: 21.48, place: "Jeddah", summary: "Saudi Arabia and the US opened the Jeddah track, producing the Declaration of Commitment to Protect the Civilians of Sudan — the baseline for all later Quad mediation efforts." },
+      { id: "el-geneina-massacre-2023", name: "El Geneina massacre", date: "Jun 2023", lon: 22.45, lat: 13.45, place: "El Geneina", summary: "RSF and allied Arab militias killed thousands of Massalit civilians in West Darfur, the event that anchored the Dec 2024 US State Department genocide determination against the RSF." },
+      { id: "wad-madani-fall-dec-2023", name: "Wad Madani falls", date: "Dec 2023", lon: 33.52, lat: 14.40, place: "Wad Madani", summary: "RSF captured Gezira state's capital, the country's agricultural and humanitarian hub, pushing the war into central Sudan and triggering a fresh wave of displacement toward Port Sudan and Egypt." },
+      { id: "port-sudan-de-facto-capital", name: "Port Sudan becomes de facto capital", date: "2023–2024", lon: 37.22, lat: 19.62, place: "Port Sudan", summary: "With Khartoum under RSF pressure, the SAF-aligned government, ministries and most embassies relocated to Port Sudan, which also anchors the frozen Russian naval-facility MoU." },
+      { id: "nairobi-charter-jul-2025", name: "RSF parallel-government charter", date: "Jul 2025", lon: 36.82, lat: -1.29, place: "Nairobi", summary: "RSF and allied factions signed a 'Government of Peace and Unity' charter in Nairobi, following the Feb 2025 Tasis signing — entrenching a parallel administration and rupturing Kenya–Sudan relations." },
+      { id: "el-fasher-fall-oct-2025", name: "El Fasher siege ends", date: "Oct 2025", lon: 25.35, lat: 13.63, place: "El Fasher", summary: "The last major SAF-held city in Darfur fell to the RSF after an 18-month siege, consolidating RSF control over all five Darfur states and hardening the de facto partition of Sudan." }
+    ],
+    ethiopia: [
+      { id: "tigray-war-start-nov-2020", name: "Tigray war begins", date: "4 Nov 2020", lon: 39.47, lat: 13.50, place: "Mekele", summary: "After TPLF forces attacked the ENDF Northern Command, Abiy launched a federal offensive into Tigray with Eritrean and Amhara support, opening a two-year war that killed an estimated 600,000." },
+      { id: "pretoria-coha-nov-2022", name: "Pretoria CoHA", date: "2 Nov 2022", lon: 39.47, lat: 13.50, place: "Mekele (subject of accord)", summary: "Under AU mediation by Olusegun Obasanjo, the federal government and TPLF signed the Cessation of Hostilities Agreement in Pretoria, ending active combat in Tigray — a truce that still holds in 2026." },
+      { id: "fano-insurgency-apr-2023", name: "Fano insurgency erupts", date: "Apr 2023", lon: 37.38, lat: 11.60, place: "Bahir Dar", summary: "Abiy's order to dissolve regional special forces triggered an Amhara uprising led by Fano militias across Gondar, Gojjam and Shewa, reopening a major internal front barely months after Pretoria." },
+      { id: "somaliland-mou-jan-2024-eth", name: "Ethiopia–Somaliland MoU", date: "1 Jan 2024", lon: 38.74, lat: 9.03, place: "Addis Ababa", summary: "Addis signed an MoU with Hargeisa trading recognition of Somaliland for naval/commercial access at Berbera, rupturing relations with Mogadishu and triggering the Horn realignment of 2024–26." },
+      { id: "ankara-declaration-dec-2024", name: "Ankara Declaration", date: "12 Dec 2024", lon: 38.74, lat: 9.03, place: "Addis Ababa (ET party)", summary: "Erdoğan mediated a joint Ethiopia–Somalia declaration in Ankara that parked the Somaliland MoU dispute and committed both sides to technical talks on sea access, without cancelling the MoU." },
+      { id: "tplf-split-2024-2025", name: "TPLF splits", date: "2024–2025", lon: 39.47, lat: 13.50, place: "Mekele", summary: "The TPLF fractured between Getachew Reda's Addis-aligned interim administration and Debretsion Gebremichael's Asmara-leaning wing, giving Eritrea a renewed lever inside Tigray." },
+      { id: "eritrea-tension-2025-2026", name: "Eritrea–Ethiopia tension flare", date: "2025–2026", lon: 39.46, lat: 14.28, place: "Adigrat (border sector)", summary: "Abiy's push for sea access and Asmara's backing of the Debretsion TPLF wing put Ethiopia and Eritrea on what ICG called a collision course, with troop build-ups along the Tigray–Eritrea border." }
+    ],
+    somalia: [
+      { id: "federal-constitution-2012", name: "Federal Republic re-founded", date: "1 Aug 2012", lon: 45.34, lat: 2.04, place: "Mogadishu", summary: "A provisional federal constitution created the Federal Government of Somalia and formalised the member-state system (Puntland, Jubaland, South West, Galmudug, Hirshabelle) that remains contested." },
+      { id: "las-anod-aug-2023", name: "Las Anod / SSC-Khatumo", date: "Aug 2023", lon: 46.72, lat: 8.48, place: "Las Anod", summary: "SSC-Khatumo forces pushed Somaliland out of Las Anod after months of fighting, opening a new contested zone between Somaliland, Puntland and Mogadishu and complicating Hargeisa's recognition pitch." },
+      { id: "somaliland-mou-jan-2024-som", name: "Ethiopia–Somaliland MoU", date: "1 Jan 2024", lon: 44.07, lat: 9.56, place: "Hargeisa", summary: "Hargeisa signed an MoU with Addis trading naval access at Berbera for recognition, triggering Mogadishu to expel the Ethiopian ambassador and accelerating the Cairo–Asmara–Mogadishu tripartite." },
+      { id: "puntland-suspension-apr-2024", name: "Puntland suspends federal ties", date: "Apr 2024", lon: 48.48, lat: 8.40, place: "Garowe", summary: "Puntland's president Said Abdullahi Deni suspended recognition of the FGS over constitutional amendments centralising power in Villa Somalia, deepening Somalia's federal-member crisis." },
+      { id: "egypt-defense-pact-aug-2024", name: "Egypt–Somalia defense pact", date: "14 Aug 2024", lon: 45.34, lat: 2.04, place: "Mogadishu", summary: "Cairo signed a security cooperation agreement with Mogadishu and began weapons deliveries, pitching to join AUSSOM as an explicit counterweight to Ethiopia and anchoring the Cairo–Asmara–Mogadishu track." },
+      { id: "aussom-start-jan-2025", name: "AUSSOM replaces ATMIS", date: "1 Jan 2025", lon: 45.34, lat: 2.04, place: "Mogadishu", summary: "Authorised by UNSCR 2767 (27 Dec 2024), the African Union Support and Stabilization Mission in Somalia re-hatted ATMIS with hybrid AU–UN financing and a 2025–28 mandate." },
+      { id: "adan-yabaal-2025", name: "Al-Shabaab retakes Adan Yabaal", date: "2025", lon: 45.39, lat: 2.75, place: "Adan Yabaal", summary: "Al-Shabaab recaptured the Middle Shabelle town of Adan Yabaal from FGS forces, reversing a signature 2022–23 Macawisley-era gain and exposing the fragility of post-ATMIS territorial control." },
+      { id: "israel-recognition-dec-2025", name: "Israel recognises Somaliland", date: "26 Dec 2025", lon: 44.07, lat: 9.56, place: "Hargeisa", summary: "Israel announced recognition of Somaliland and reciprocal office openings, drawing condemnation from Mogadishu, the OIC and the AU, and slotting Hargeisa into the Trump II-era realignment." }
+    ]
+  },
+
   // Global off-map actors
   offmap: {
     sudan: [
@@ -1903,11 +2268,22 @@ const aidTypes = {
   ethiopia: { ...defaultAidTypes(), ...(storedAidTypes.ethiopia || {}) },
   somalia: { ...defaultAidTypes(), ...(storedAidTypes.somalia || {}) },
 };
+// Overlay toggles persisted to localStorage. showHistorical defaults to OFF
+// (so the "current state of play" arrows stay the baseline); showMilestones
+// defaults to ON so a first-time viewer sees the key events without having
+// to discover a toggle.
+const _readFlag = (k, dflt) => {
+  const v = localStorage.getItem(k);
+  if (v === null) return dflt;
+  return v === 'true';
+};
 const state = {
   mode: _params.get('mode') || localStorage.getItem('conflict_mode') || 'sudan',
   initialFocus: _focus ? _focus.split(',').map(parseFloat) : null,
   initialSelect: _select || null,
   aidTypes,
+  showHistorical: _readFlag('show_historical', false),
+  showMilestones: _readFlag('show_milestones', true),
   selected: null,
   world: null,
   countriesById: {},   // ISO-N3 -> feature
@@ -2488,6 +2864,9 @@ function initSvg() {
   mapRoot.append('g').attr('id', 'geoLayer');
   mapRoot.append('g').attr('id', 'cityLayer');
   mapRoot.append('g').attr('id', 'countryLabelLayer');
+  // Milestone pins sit above cities but below gateway chips so dense
+  // capital clusters don't bury them.
+  mapRoot.append('g').attr('id', 'milestoneLayer');
   // Gateway chips are inside the zoomed root so they anchor to their entry
   // points; text & markers are counter-scaled in updateZoomLayers.
   mapRoot.append('g').attr('id', 'gatewayLayer');
@@ -3122,6 +3501,7 @@ function render() {
 
   renderTints();
   renderArrows();
+  renderMilestones();
   renderOffMapGateways();
   renderRail();
   renderLegend();
@@ -3151,6 +3531,7 @@ function layeredFillsForSide(side) {
 }
 
 function renderTints() {
+  if (typeof svg === 'undefined' || !svg || svg.empty()) return;
   const layer = svg.select('#tintLayer');
   layer.selectAll('*').remove();
   const mode = DATA.modes[state.mode];
@@ -3237,12 +3618,20 @@ function anchorProjected(id) {
 }
 
 function renderArrows() {
+  if (typeof svg === 'undefined' || !svg || svg.empty()) return;
   const layer = svg.select('#arrowLayer');
   layer.selectAll('*').remove();
   // Filter by the user's per-mode aid-type toggles. An arrow with no type
   // (shouldn't happen but guard anyway) is shown when any type is enabled.
+  // Historical (era: "historical") arrows stay hidden unless the user has
+  // flipped the "Show historical ties" toggle — they represent durable
+  // pre-2021 relationships that the current arrows build on.
   const typeOn = state.aidTypes[state.mode] || {};
-  const arrows = (DATA.arrows[state.mode] || []).filter(a => !a.type || typeOn[a.type]);
+  const arrows = (DATA.arrows[state.mode] || []).filter(a => {
+    if (a.type && !typeOn[a.type]) return false;
+    if (a.era === 'historical' && !state.showHistorical) return false;
+    return true;
+  });
   const mode = DATA.modes[state.mode];
 
   // Count arrows per from-to pair (for curvature splay between two nodes)
@@ -3306,10 +3695,13 @@ function renderArrows() {
     const headDense = tTotal >= 4;
     const headMarker = `url(#arrowhead-${cid}${headDense ? '-sm' : ''})`;
 
+    // Historical arrows get an extra class so the CSS can desaturate them.
+    const histCls = a.era === 'historical' ? ' arrow-historical' : '';
+
     // Halo for clicks
     layer.append('path')
       .attr('d', d)
-      .attr('class', 'arrow-halo')
+      .attr('class', 'arrow-halo' + histCls)
       .attr('stroke', 'transparent')
       .attr('stroke-width', Math.max(16, w + 14))
       .style('pointer-events', 'stroke')
@@ -3318,16 +3710,16 @@ function renderArrows() {
 
     if (style.double) {
       // Double line effect: thick color + white inner
-      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w + 2.2).attr('data-base-w', w + 2.2).attr('fill','none').attr('opacity', 0.9).attr('class','arrow').style('pointer-events','stroke').style('cursor','pointer').on('click', () => selectArrow(a.id));
-      layer.append('path').attr('d', d).attr('stroke', '#FAF8F3').attr('stroke-width', Math.max(0.8, w - 0.8)).attr('data-base-w', Math.max(0.8, w - 0.8)).attr('fill','none').attr('class','arrow').style('pointer-events','none');
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w + 2.2).attr('data-base-w', w + 2.2).attr('fill','none').attr('opacity', 0.9).attr('class','arrow' + histCls).style('pointer-events','stroke').style('cursor','pointer').on('click', () => selectArrow(a.id));
+      layer.append('path').attr('d', d).attr('stroke', '#FAF8F3').attr('stroke-width', Math.max(0.8, w - 0.8)).attr('data-base-w', Math.max(0.8, w - 0.8)).attr('fill','none').attr('class','arrow' + histCls).style('pointer-events','none');
       // head — invisible stroke carrying the marker-end. Use stroke-opacity
       // (not opacity) so the arrowhead marker still renders; element-level
       // opacity:0 would hide markers too.
-      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w).attr('fill','none').attr('class','arrow').attr('marker-end', headMarker).attr('stroke-opacity', 0).style('pointer-events','none');
+      layer.append('path').attr('d', d).attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w).attr('fill','none').attr('class','arrow' + histCls).attr('marker-end', headMarker).attr('stroke-opacity', 0).style('pointer-events','none');
     } else {
       const p = layer.append('path')
         .attr('d', d)
-        .attr('class', 'arrow')
+        .attr('class', 'arrow' + histCls)
         .attr('stroke', color).attr('stroke-width', w).attr('data-base-w', w)
         .attr('fill', 'none').attr('stroke-linecap', 'round')
         .attr('opacity', 0.88)
@@ -3359,6 +3751,7 @@ function renderArrows() {
 // (USA, China, Russia). Only shows gateways that actually have arrows in the
 // current mode, so unused powers don't crowd the frame.
 function renderOffMapGateways() {
+  if (typeof svg === 'undefined' || !svg || svg.empty()) return;
   const layer = svg.select('#gatewayLayer');
   layer.selectAll('*').remove();
 
@@ -3404,7 +3797,7 @@ function renderOffMapGateways() {
     const g = layer.append('g')
       .attr('class', 'gateway')
       .style('cursor', 'pointer')
-      .on('click', () => selectCountry(cfg.code));
+      .on('click', () => selectOffMap(anchorId));
 
     // No anchor dot: off-map arrows arrive from off-screen, so the only
     // visual at the entry point should be the label chip itself. The arrow
@@ -3425,12 +3818,40 @@ function renderOffMapGateways() {
   });
 }
 
+// Milestone pins: mode-scoped historical events pinned at real lon/lat.
+// Numbered small circles; clicking opens the rail's milestone-detail panel.
+// Counter-scaled via CSS rules on #mapRoot .milestone-*.
+function renderMilestones() {
+  // Defensive guard: selection callbacks (selectMilestone / clearSelection)
+  // may fire in edge cases before the map / d3 has finished loading — bail
+  // rather than throw on svg.select().
+  if (typeof svg === 'undefined' || !svg || svg.empty()) return;
+  const layer = svg.select('#milestoneLayer');
+  if (!layer || layer.empty()) return;
+  layer.selectAll('*').remove();
+  if (!state.showMilestones) return;
+  const list = (DATA.milestones && DATA.milestones[state.mode]) || [];
+  list.forEach((ms, i) => {
+    const p = projection([ms.lon, ms.lat]);
+    if (!p) return;
+    const isSelected = state.selected && state.selected.type === 'milestone' && state.selected.id === ms.id;
+    const g = layer.append('g')
+      .attr('class', 'milestone-group' + (isSelected ? ' selected' : ''))
+      .attr('transform', `translate(${p[0]} ${p[1]})`)
+      .on('click', (ev) => { ev.stopPropagation(); selectMilestone(ms.id); });
+    g.append('circle').attr('class', 'milestone-ring').attr('cx', 0).attr('cy', 0);
+    g.append('text').attr('class', 'milestone-num').attr('x', 0).attr('y', 0).text(i + 1);
+  });
+}
+
 // ---------- Rail ----------
 function renderRail() {
   if (state.selected) {
     if (state.selected.type === 'arrow') return renderArrowDetail();
     if (state.selected.type === 'country') return renderCountryDetail();
     if (state.selected.type === 'city') return renderCityDetail();
+    if (state.selected.type === 'milestone') return renderMilestoneDetail();
+    if (state.selected.type === 'offmap') return renderOffMapDetail();
   }
   renderOffMap();
 }
@@ -3449,30 +3870,67 @@ function renderOffMap() {
   const mode = state.mode;
   const modeData = DATA.modes[mode];
   const offmap = DATA.offmap[mode];
+  const roots = DATA.roots && DATA.roots[mode];
+  // Collapsed-by-default roots card. Open-state persists per mode to
+  // localStorage so a reader who expanded it once doesn't re-fold it.
+  const rootsOpen = localStorage.getItem('roots_open_' + mode) === 'true';
+  const rootsHtml = roots ? `
+    <div class="roots-card${rootsOpen ? ' open' : ''}" data-roots-mode="${mode}">
+      <div class="roots-head" data-roots-toggle="${mode}">
+        <span class="roots-kicker">${escapeHtml(roots.kicker)}</span>
+        <span class="roots-title">${escapeHtml(roots.title)}</span>
+        <span class="roots-caret">&rsaquo;</span>
+      </div>
+      <div class="roots-body">
+        ${roots.bullets.map(b => `
+          <div class="roots-bullet">
+            <div class="roots-bullet-era">${escapeHtml(b.era)}</div>
+            <div class="roots-bullet-head">${escapeHtml(b.head)}</div>
+            <div class="roots-bullet-body">${escapeHtml(b.body)}</div>
+          </div>`).join('')}
+        ${roots.close ? `<div class="roots-close">${escapeHtml(roots.close)}</div>` : ''}
+      </div>
+    </div>
+  ` : '';
   const rail = document.getElementById('rail');
   rail.innerHTML = `
     <div class="rail-inner">
+      ${rootsHtml}
       <div class="rail-section-title">Global / Off-Map Actors</div>
-      <div class="rail-desc">Powers acting on this conflict from outside the region shown. Click arrows or countries on the map for detail.</div>
+      <div class="rail-desc">Powers acting on this conflict from outside the region shown. Click an actor to see its role across all three conflicts.</div>
       ${offmap.map(a => {
         const sideObj = modeData.sides.find(s => s.id === a.lean);
         const dot = sideObj ? sideObj.color : '#999';
         return `
-          <div class="actor-card">
+          <div class="actor-card" data-offmap-id="${escapeHtml(a.id)}" style="cursor:pointer">
             <div class="actor-head">
               <span class="actor-dot" style="background:${dot}"></span>
-              <span class="actor-name">${a.name}</span>
+              <span class="actor-name">${escapeHtml(a.name)}</span>
             </div>
-            <div class="actor-posture">${a.posture}</div>
+            <div class="actor-posture">${escapeHtml(a.posture)}</div>
             <div class="actor-types">${a.types.map(t => `<span class="type-chip">${typeIconSvg(t)}${t}</span>`).join('')}</div>
           </div>
         `;
       }).join('')}
       <div style="margin-top:22px; font-size:11px; color:var(--ink-3); line-height:1.55; font-family:'JetBrains Mono', monospace; letter-spacing:0.02em;">
-        Click any arrow on the map for actor-pair details and sources. Click a shaded country for profile and role in this conflict.
+        Click any arrow for actor-pair detail. Click an actor card for their through-line across all three conflicts. Numbered pins on the map are key events.
       </div>
     </div>
   `;
+
+  // Wire the collapsible header (toggles .open on the card) and the
+  // off-map actor cards (open the cross-mode through-line view).
+  const head = rail.querySelector('[data-roots-toggle]');
+  if (head) {
+    head.addEventListener('click', () => {
+      const card = head.closest('.roots-card');
+      const isOpen = card.classList.toggle('open');
+      localStorage.setItem('roots_open_' + mode, isOpen ? 'true' : 'false');
+    });
+  }
+  rail.querySelectorAll('[data-offmap-id]').forEach(el => {
+    el.addEventListener('click', () => selectOffMap(el.dataset.offmapId));
+  });
 }
 
 function renderArrowDetail() {
@@ -3482,24 +3940,49 @@ function renderArrowDetail() {
   const sideObj = mode.sides.find(s => s.id === a.side);
   const color = sideObj ? sideObj.color : '#666';
   const rail = document.getElementById('rail');
+  // Cross-mode linkage block: curated references from this arrow to related
+  // arrows in other conflicts. Only present on ~10 hub arrows. Buttons jump
+  // mode + select the target arrow in a single click.
+  const linkageHtml = (a.linkage && a.linkage.length) ? `
+    <div class="linkage-block">
+      <div class="linkage-title">Connects to other conflicts</div>
+      ${a.linkage.map(l => {
+        const target = (DATA.arrows[l.mode] || []).find(x => x.id === l.arrowId);
+        if (!target) return '';
+        const targetModeTitle = DATA.modes[l.mode] ? DATA.modes[l.mode].title : l.mode;
+        return `
+          <div class="linkage-item">
+            <button class="linkage-btn" onclick="jumpToArrow('${l.mode}','${l.arrowId}')">${escapeHtml(target.title)} <span style="font-weight:500;color:var(--ink-3);font-size:10.5px">&middot; ${escapeHtml(targetModeTitle)}</span></button>
+            <div class="linkage-note">${escapeHtml(l.note)}</div>
+          </div>`;
+      }).join('')}
+    </div>
+  ` : '';
+
+  const eraChipHtml = a.era === 'historical'
+    ? '<div class="status-chip" style="color:#5E4A28;background:#EFE7D4;">Historical tie · durable context</div>'
+    : '';
+
   rail.innerHTML = `
     <div class="detail-panel">
       <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
       <div class="detail-kicker" style="color:${color}">Support flow · ${a.type}</div>
-      <div class="detail-title">${a.title}</div>
+      <div class="detail-title">${escapeHtml(a.title)}</div>
+      ${eraChipHtml}
       <div class="detail-meta">
-        <div class="meta-item"><div class="k">Type</div><div class="v" style="text-transform:capitalize">${a.type}</div></div>
+        <div class="meta-item"><div class="k">Type</div><div class="v" style="text-transform:capitalize">${escapeHtml(a.type)}</div></div>
         <div class="meta-item"><div class="k">Intensity</div><div class="v">${['Minor','Significant','Major'][a.tier-1]}</div></div>
-        <div class="meta-item"><div class="k">Period</div><div class="v">${a.dates}</div></div>
-        <div class="meta-item"><div class="k">Backs</div><div class="v" style="color:${color}">${sideObj ? sideObj.label : ''}</div></div>
+        <div class="meta-item"><div class="k">Period</div><div class="v">${escapeHtml(a.dates)}</div></div>
+        <div class="meta-item"><div class="k">Backs</div><div class="v" style="color:${color}">${escapeHtml(sideObj ? sideObj.label : '')}</div></div>
       </div>
-      <div class="detail-summary">${a.summary}</div>
+      <div class="detail-summary">${escapeHtml(a.summary)}</div>
+      ${linkageHtml}
       <div class="sources-title">Sources</div>
       ${a.sources.map(s => `
         <div class="source-item">
-          <span class="source-pub">${s.pub}</span>
-          <a href="${s.url}" target="_blank" rel="noopener">${s.head}</a>
-          <span class="source-date">${s.date}</span>
+          <span class="source-pub">${escapeHtml(s.pub)}</span>
+          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.head)}</a>
+          <span class="source-date">${escapeHtml(s.date)}</span>
         </div>
       `).join('')}
     </div>
@@ -3618,13 +4101,149 @@ function renderCityDetail() {
   `;
 }
 
+// Milestone detail: single dated event, lives in DATA.milestones[mode].
+// Content is summary-only; arrow references are intentionally out of scope
+// — keep this a "what happened and when" card, not a network graph node.
+function renderMilestoneDetail() {
+  const id = state.selected.id;
+  const list = (DATA.milestones && DATA.milestones[state.mode]) || [];
+  const idx = list.findIndex(m => m.id === id);
+  const ms = list[idx];
+  if (!ms) { state.selected = null; return renderRail(); }
+  const rail = document.getElementById('rail');
+  rail.innerHTML = `
+    <div class="detail-panel">
+      <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
+      <div class="detail-kicker">Milestone · #${idx + 1}</div>
+      <div class="detail-title">${escapeHtml(ms.name)}</div>
+      <div class="detail-meta">
+        <div class="meta-item"><div class="k">Date</div><div class="v">${escapeHtml(ms.date)}</div></div>
+        <div class="meta-item"><div class="k">Place</div><div class="v">${escapeHtml(ms.place || '')}</div></div>
+      </div>
+      <div class="detail-summary">${escapeHtml(ms.summary)}</div>
+    </div>
+  `;
+}
+
+// Off-map "through-line" view. User selected an off-map actor (USA, UAE etc.)
+// from the rail default card — this shows that actor's arrows in every mode,
+// so the reader can see one actor's posture across all three conflicts.
+function renderOffMapDetail() {
+  const id = state.selected.id;
+  // id can be an OFFMAP-suffixed anchor id (e.g. "USA_OFFMAP") or a country
+  // ISO-3 (e.g. "UAE", "EGY") since the rail card reuses this view for
+  // in-region external actors too. Resolve both.
+  const gw = GATEWAYS[id];
+  const iso = gw ? gw.code : id;
+  const country = DATA.countries[iso];
+  const displayName = country ? country.name : (gw ? gw.label : iso);
+
+  // For each mode, collect arrows where this actor is the origin or target.
+  // Match by anchor id: off-map anchor (e.g. USA_OFFMAP) or country ISO
+  // (e.g. UAE, EGY) — both appear as a.from / a.to.
+  const modeIds = ['sudan', 'ethiopia', 'somalia'];
+  const perMode = modeIds.map(m => {
+    const arrows = (DATA.arrows[m] || []).filter(a =>
+      a.from === id || a.to === id || a.from === iso || a.to === iso
+    );
+    // Off-map posture card (rail default) if it exists for this mode.
+    const offmapEntry = (DATA.offmap && DATA.offmap[m] || []).find(o => o.id === id || o.id === iso);
+    return { mode: m, title: DATA.modes[m].title, arrows, offmapEntry };
+  });
+
+  const rail = document.getElementById('rail');
+  const hasAny = perMode.some(x => x.arrows.length || x.offmapEntry);
+  const blocksHtml = perMode.map(block => {
+    const modeData = DATA.modes[block.mode];
+    const postureHtml = block.offmapEntry ? `
+      <div class="actor-posture" style="font-size:11.5px; margin-bottom:8px;">${escapeHtml(block.offmapEntry.posture)}</div>
+    ` : '';
+    const arrowRowsHtml = block.arrows.map(a => {
+      const sideObj = modeData.sides.find(s => s.id === a.side);
+      const color = sideObj ? sideObj.color : '#8A8A85';
+      return `
+        <div class="throughline-arrow" onclick="jumpToArrow('${block.mode}','${a.id}')">
+          <span class="throughline-dot" style="background:${color}"></span>
+          <span class="throughline-title">${escapeHtml(a.title)}</span>
+          <span class="throughline-dates">${escapeHtml(a.dates || '')}</span>
+        </div>`;
+    }).join('');
+    if (!postureHtml && !arrowRowsHtml) {
+      return `
+        <div class="throughline-mode">
+          <div class="throughline-mode-title">${escapeHtml(block.title)}</div>
+          <div style="font-size:11.5px; color:var(--ink-3); font-style:italic;">No direct involvement tracked here.</div>
+        </div>`;
+    }
+    return `
+      <div class="throughline-mode">
+        <div class="throughline-mode-title">${escapeHtml(block.title)}</div>
+        ${postureHtml}
+        ${arrowRowsHtml}
+      </div>`;
+  }).join('');
+
+  rail.innerHTML = `
+    <div class="detail-panel">
+      <button class="back-btn" onclick="clearSelection()">&larr; Back to actors</button>
+      <div class="detail-kicker">Actor · across conflicts</div>
+      <div class="detail-title">${escapeHtml(displayName)}</div>
+      ${country ? `
+        <div class="detail-meta">
+          <div class="meta-item"><div class="k">Capital</div><div class="v">${escapeHtml(country.capital || '—')}</div></div>
+          <div class="meta-item"><div class="k">GDP</div><div class="v">${escapeHtml(country.gdp || '—')}</div></div>
+        </div>
+      ` : ''}
+      ${hasAny ? '' : '<div class="detail-summary" style="font-style:italic;color:var(--ink-3);">No direct involvement tracked across the three conflicts.</div>'}
+      <div class="throughline-block">${blocksHtml}</div>
+      ${country ? `<button class="back-btn" style="margin-top:14px" onclick="selectCountry('${iso}')">See full ${escapeHtml(country.name)} country profile &rarr;</button>` : ''}
+    </div>
+  `;
+}
+
+// Tiny HTML escaper for the template-literal heavy rail renderers. Keeps
+// source-provided strings safe from breaking out of attribute / text context.
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function selectArrow(id) { state.selected = { type:'arrow', id }; renderRail(); }
 function selectCountry(id) { state.selected = { type:'country', id }; renderRail(); }
 function selectCity(name) { state.selected = { type:'city', id: name }; renderRail(); }
-function clearSelection() { state.selected = null; renderRail(); }
+function selectMilestone(id) {
+  state.selected = { type:'milestone', id };
+  renderMilestones();   // redraw so the selected pin picks up .selected styling
+  renderRail();
+}
+// Cross-mode "through-line" view for an off-map actor. id matches a
+// DATA.offmap[mode][].id (e.g. "USA_OFFMAP"). Renders arrows to/from that
+// actor in all three modes plus per-mode posture cards.
+function selectOffMap(id) { state.selected = { type:'offmap', id }; renderRail(); }
+// Jump to a specific arrow in a specific mode (used by linkage buttons and
+// the off-map through-line list).
+function jumpToArrow(modeId, arrowId) {
+  if (modeId && modeId !== state.mode) {
+    state.mode = modeId;
+    localStorage.setItem('conflict_mode', state.mode);
+  }
+  state.selected = { type:'arrow', id: arrowId };
+  if (state.world) render();
+  else renderRail();
+}
+function clearSelection() {
+  state.selected = null;
+  renderMilestones();
+  renderRail();
+}
 window.clearSelection = clearSelection;
 window.selectCountry = selectCountry;
 window.selectCity = selectCity;
+window.selectMilestone = selectMilestone;
+window.selectOffMap = selectOffMap;
+window.jumpToArrow = jumpToArrow;
 
 // ---------- Legend ----------
 function renderLegend() {
@@ -3655,10 +4274,23 @@ function renderLegend() {
     const on = !!modeTypes[t];
     return `<button class="legend-toggle ${on ? '' : 'off'}" data-aid-type="${t}" title="Click to ${on ? 'hide' : 'show'} ${t} flows in this view">${typeSvgs[t]}<span>${t}</span></button>`;
   }).join('');
+  // Overlay toggles — kept separate from the aid-type chips so the visual
+  // distinction is obvious. "Historical ties" surfaces pre-2021 durable
+  // relationships that are hidden by default; "Milestones" toggles the
+  // numbered event pins on the map.
+  const overlayLegend = `
+    <button class="legend-toggle ${state.showHistorical ? '' : 'off'}" data-toggle="historical" title="Show pre-2021 durable ties (hidden by default)">
+      <svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="32" y2="5" stroke="#9A7A3D" stroke-width="2.2" stroke-dasharray="6 2 1 2" fill="none"/></svg>
+      <span>historical ties</span>
+    </button>
+    <button class="legend-toggle ${state.showMilestones ? '' : 'off'}" data-toggle="milestones" title="Show numbered key-event pins on the map">
+      <svg viewBox="0 0 34 10"><circle cx="17" cy="5" r="3.4" fill="#FAF8F3" stroke="#2C2A26" stroke-width="1.3"/><circle cx="17" cy="5" r="1.2" fill="#2C2A26"/></svg>
+      <span>milestones</span>
+    </button>`;
   legend.innerHTML = `
     <div class="legend-group">${sidesHtml}</div>
-    <div class="legend-arrows">${arrowLegend}</div>
-    <div class="footer-note">For analytical illustration · Click an aid-type chip to filter · Sources in detail panels</div>
+    <div class="legend-arrows">${arrowLegend}<span style="width:1px;height:14px;background:var(--line);margin:0 4px;"></span>${overlayLegend}</div>
+    <div class="footer-note">Click a chip to filter · Numbered pins = key events · Sources in detail panels</div>
   `;
   // Wire aid-type toggles after render.
   legend.querySelectorAll('[data-aid-type]').forEach(btn => {
@@ -3667,6 +4299,22 @@ function renderLegend() {
       state.aidTypes[state.mode][t] = !state.aidTypes[state.mode][t];
       saveAidTypes();
       renderArrows();
+      renderLegend();
+    });
+  });
+  // Wire overlay toggles (historical ties / milestones).
+  legend.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const which = btn.dataset.toggle;
+      if (which === 'historical') {
+        state.showHistorical = !state.showHistorical;
+        localStorage.setItem('show_historical', state.showHistorical ? 'true' : 'false');
+        renderArrows();
+      } else if (which === 'milestones') {
+        state.showMilestones = !state.showMilestones;
+        localStorage.setItem('show_milestones', state.showMilestones ? 'true' : 'false');
+        renderMilestones();
+      }
       renderLegend();
     });
   });
